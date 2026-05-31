@@ -24,20 +24,14 @@
   #opacity-wrap{display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted);font-family:'Barlow Condensed',sans-serif;letter-spacing:0.05em;text-transform:uppercase;}
   input[type=range]{width:70px;accent-color:var(--accent);cursor:pointer;}
   #map{flex:1;width:100%;}
-
-  /* Status bar */
+  #loadbar{position:absolute;top:0;left:0;width:0%;height:3px;background:var(--accent);z-index:2000;transition:width 0.4s;}
   #statusbar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:999;background:rgba(13,17,23,0.88);border:1px solid var(--border);border-radius:12px;padding:4px 14px;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);pointer-events:none;white-space:nowrap;}
   #statusbar b{color:var(--accent);}
-
-  /* Loading bar */
-  #loadbar{position:absolute;top:0;left:0;width:0%;height:3px;background:var(--accent);z-index:2000;transition:width 0.4s;}
-
-  #legend{position:absolute;bottom:40px;right:8px;z-index:999;background:rgba(13,17,23,0.93);border:1px solid var(--border);border-radius:6px;padding:9px 11px;min-width:200px;backdrop-filter:blur(8px);}
+  #legend{position:absolute;bottom:40px;right:8px;z-index:999;background:rgba(13,17,23,0.95);border:1px solid var(--border);border-radius:6px;padding:9px 11px;min-width:205px;backdrop-filter:blur(8px);}
   #legend-toggle{font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;}
   #legend-body{margin-top:7px;display:flex;flex-direction:column;gap:4px;}
   .legend-row{display:flex;align-items:center;gap:7px;font-size:0.76rem;color:var(--text);}
-  .legend-swatch{width:18px;height:14px;border-radius:2px;flex-shrink:0;border:1px solid rgba(255,255,255,0.2);}
-
+  .legend-swatch{width:20px;height:14px;border-radius:2px;flex-shrink:0;border:1px solid rgba(255,255,255,0.3);}
   #info-panel{position:absolute;bottom:40px;left:8px;z-index:999;background:rgba(13,17,23,0.96);border:2px solid var(--accent);border-radius:6px;padding:11px 13px;max-width:260px;display:none;backdrop-filter:blur(8px);}
   #info-panel h3{font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--accent);margin-bottom:5px;padding-right:16px;}
   #info-panel p{font-size:0.79rem;color:var(--text);line-height:1.6;}
@@ -55,7 +49,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #10</span>
+  <span class="build-tag">Build #11</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -64,42 +58,49 @@
     <button class="btn locate" id="locate-btn"     onclick="locateMe()">📍 My Location</button>
     <div id="opacity-wrap">
       Opacity
-      <input type="range" id="opacity-slider" min="10" max="95" value="65" oninput="updateOpacity(this.value)">
+      <input type="range" id="opacity-slider" min="10" max="95" value="75" oninput="updateOpacity(this.value)">
     </div>
   </div>
 </div>
 <div id="map"></div>
-<div id="statusbar">Zoom in to see land ownership</div>
-
+<div id="statusbar">Zoom in to level 7+ to see land ownership</div>
 <div id="legend">
   <div id="legend-toggle" onclick="toggleLegend()">Legend <span id="legend-arrow">▲</span></div>
   <div id="legend-body">
-    <div class="legend-row"><div class="legend-swatch" style="background:#F0B000"></div>BLM</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#267300"></div>National Forest (USFS)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#6699CD"></div>National Park (NPS)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#FF7F7F"></div>State Land / Trust</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#70A800"></div>Wildlife Refuge (FWS)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#C500FF"></div>Tribal Land</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#FF0000"></div>Military (DOD)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#004DA8"></div>Bureau of Reclamation</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#FFBEE8"></div>Other Federal</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#e6a800;border-color:#e6a800"></div>BLM</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#1a6600;border-color:#1a6600"></div>National Forest (USFS)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#1a6699;border-color:#1a6699"></div>National Park (NPS)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#cc3300;border-color:#cc3300"></div>State Land / Trust</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#4d9900;border-color:#4d9900"></div>Wildlife Refuge (FWS)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#6600cc;border-color:#6600cc"></div>Tribal Land</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#cc0000;border-color:#cc0000"></div>Military (DOD)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#003399;border-color:#003399"></div>Bureau of Reclamation</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#666699;border-color:#666699"></div>Other Federal</div>
   </div>
 </div>
-
 <div id="info-panel">
   <span id="info-close" onclick="closeInfo()">✕</span>
   <h3 id="info-title">Land Info</h3>
   <p id="info-body"></p>
 </div>
-
 <script>
 // ══════════════════════════════════════════
-// AGENCY COLORS & LABELS
+// BOLD HIGH-CONTRAST COLORS
+// Much darker/richer than before so they
+// show clearly on both topo AND satellite
 // ══════════════════════════════════════════
 const COLORS={
-  'BLM':'#F0B000','USFS':'#267300','NPS':'#6699CD','FWS':'#70A800',
-  'DOD':'#FF0000','BOR':'#004DA8','TRIB':'#C500FF',
-  'STA':'#FF7F7F','STAT':'#FF7F7F','LOC':'#FFAA00','OTHF':'#FFBEE8'
+  'BLM':     '#e6a800',  // deep amber/gold
+  'USFS':    '#1a6600',  // dark forest green
+  'NPS':     '#1a6699',  // deep blue
+  'FWS':     '#4d9900',  // medium green
+  'DOD':     '#cc0000',  // strong red
+  'BOR':     '#003399',  // navy blue
+  'TRIB':    '#6600cc',  // deep purple
+  'STA':     '#cc3300',  // burnt orange-red
+  'STAT':    '#cc3300',
+  'LOC':     '#cc6600',  // dark orange
+  'OTHF':    '#666699',  // muted blue-grey
 };
 const LABELS={
   'BLM':'Bureau of Land Management','USFS':'US Forest Service',
@@ -108,7 +109,7 @@ const LABELS={
   'TRIB':'Tribal Land','STA':'State Land / Trust','STAT':'State Land / Trust',
   'LOC':'Local Government','OTHF':'Other Federal','PVT':'Private Land'
 };
-function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#FFBEE8';}
+function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#666699';}
 
 // ── Base layers ──
 const topoLayer     = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',{attribution:'USGS Topo',maxZoom:16,zIndex:1});
@@ -116,17 +117,12 @@ const satelliteLayer= L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/s
 const streetLayer   = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19,zIndex:1});
 
 const map = L.map('map',{center:[39.5,-98.35],zoom:5,layers:[topoLayer]});
-let currentBase=topoLayer, currentOpacity=0.65, layerVisible=true;
+let currentBase=topoLayer, currentOpacity=0.75, layerVisible=true;
 
 // ══════════════════════════════════════════
-// STATE-BY-STATE LOADING
-// Uses the BLM ArcGIS REST API filtered by
-// state bounding box. Caches loaded states
-// so we never fetch the same state twice.
+// STATE BOUNDING BOXES
 // ══════════════════════════════════════════
-
-// State abbreviation → bounding box [xmin,ymin,xmax,ymax]
-const STATE_BBOX = {
+const STATE_BBOX={
   'AL':[-88.47,30.22,-84.89,35.01],'AK':[-179.15,51.21,-129.99,71.35],
   'AZ':[-114.82,31.33,-109.04,37.00],'AR':[-94.62,33.00,-89.64,36.50],
   'CA':[-124.41,32.53,-114.13,42.01],'CO':[-109.06,36.99,-102.04,41.00],
@@ -154,179 +150,140 @@ const STATE_BBOX = {
   'WI':[-92.89,42.49,-86.25,47.08],'WY':[-111.06,40.99,-104.05,45.01]
 };
 
-// Reverse lookup: given a lat/lng, which state?
-function getStateForPoint(lat, lng) {
-  for(const [abbr, bb] of Object.entries(STATE_BBOX)){
-    if(lng>=bb[0]&&lng<=bb[2]&&lat>=bb[1]&&lat<=bb[3]) return abbr;
+function getVisibleStates(){
+  const b=map.getBounds(),vis=[];
+  for(const [abbr,bb] of Object.entries(STATE_BBOX)){
+    if(b.getWest()<bb[2]&&b.getEast()>bb[0]&&b.getSouth()<bb[3]&&b.getNorth()>bb[1]) vis.push(abbr);
   }
-  return null;
+  return vis;
 }
 
-// Which states are visible in current map bounds?
-function getVisibleStates() {
-  const b = map.getBounds();
-  const visible = [];
-  for(const [abbr, bb] of Object.entries(STATE_BBOX)){
-    if(b.getWest()<bb[2]&&b.getEast()>bb[0]&&b.getSouth()<bb[3]&&b.getNorth()>bb[1]){
-      visible.push(abbr);
-    }
-  }
-  return visible;
-}
+const stateCache={};
+let geoLayer=null, loadTimer=null;
 
-// Cache: state abbr → GeoJSON features array
-const stateCache = {};
-// Currently drawn layer
-let geoLayer = null;
-let loadTimer = null;
-let isLoading = false;
-
-// Style function — solid fill, our colors
-function featureStyle(feature) {
-  const p = feature.properties || {};
-  const code = (p.ADMIN_AGENCY_CODE || p.MGMT_AGENCY_CODE || p.Mang_Name || 'OTHF').toUpperCase();
-  // Map common Mang_Name values to codes
-  const codeMap = {
+// ══════════════════════════════════════════
+// STYLE — SOLID FILL, BOLD COLORS
+// fillOpacity drives visibility
+// weight:1.5 makes borders clearly visible
+// ══════════════════════════════════════════
+function featureStyle(feature){
+  const p=feature.properties||{};
+  const raw=(p.ADMIN_AGENCY_CODE||p.MGMT_AGENCY_CODE||p.Mang_Name||'OTHF').toUpperCase();
+  // Normalize Mang_Name strings to codes
+  const norm={
     'BUREAU OF LAND MANAGEMENT':'BLM',
-    'US FOREST SERVICE':'USFS','USFS':'USFS',
-    'NATIONAL PARK SERVICE':'NPS','NPS':'NPS',
-    'US FISH AND WILDLIFE SERVICE':'FWS','FWS':'FWS',
-    'DEPARTMENT OF DEFENSE':'DOD','DOD':'DOD',
+    'US FOREST SERVICE':'USFS','USDA FOREST SERVICE':'USFS',
+    'NATIONAL PARK SERVICE':'NPS',
+    'US FISH AND WILDLIFE SERVICE':'FWS','USFWS':'FWS',
+    'DEPARTMENT OF DEFENSE':'DOD',
     'BUREAU OF RECLAMATION':'BOR',
-    'TRIBAL':'TRIB',
-    'STATE':'STA'
+    'TRIBAL':'TRIB','AMERICAN INDIAN LANDS':'TRIB',
+    'STATE':'STA','STATE LAND':'STA'
   };
-  const resolved = codeMap[code] || code;
-  const color = agencyColor(resolved);
+  const code=norm[raw]||raw.substring(0,4);
+  const color=agencyColor(code);
   return {
     fillColor:   color,
     fillOpacity: currentOpacity,
-    color:       '#222',
-    weight:      0.6,
-    opacity:     0.8
+    color:       color,      // border same color as fill
+    weight:      1.5,
+    opacity:     1.0
   };
 }
 
-// ── Fetch one state's land data ──
-async function fetchState(abbr) {
-  if(stateCache[abbr]) return stateCache[abbr]; // already cached
-
-  const bb  = STATE_BBOX[abbr];
-  const bbox= `${bb[0]},${bb[1]},${bb[2]},${bb[3]}`;
-
-  // Query BLM SMA for this state's bbox
-  const url =
-    `https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/1/query?`+
+async function fetchState(abbr){
+  if(stateCache[abbr]) return stateCache[abbr];
+  const bb=STATE_BBOX[abbr];
+  const bbox=`${bb[0]},${bb[1]},${bb[2]},${bb[3]}`;
+  // Use PAD-US ArcGIS Online service — works from browsers
+  const url=`https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Protected_Areas/FeatureServer/0/query?`+
     `geometry=${bbox}&geometryType=esriGeometryEnvelope&inSR=4326`+
     `&spatialRel=esriSpatialRelIntersects`+
-    `&outFields=ADMIN_AGENCY_CODE,ADMIN_UNIT_NAME,MGMT_AGENCY_CODE,GIS_ACRES,STATE_GEOG`+
-    `&returnGeometry=true&outSR=4326&resultRecordCount=1000&f=geojson`;
-
-  const resp    = await fetch(url);
-  const geojson = await resp.json();
-  const features= (geojson.features||[]);
-  stateCache[abbr] = features;
+    `&outFields=Mang_Name,Unit_Nm,GIS_Acres,Mang_Type,State_Nm`+
+    `&returnGeometry=true&outSR=4326&resultRecordCount=500&f=geojson`;
+  const resp=await fetch(url);
+  const geojson=await resp.json();
+  const features=(geojson.features||[]);
+  stateCache[abbr]=features;
   return features;
 }
 
-// ── Rebuild the drawn layer from cached features ──
-function rebuildLayer() {
-  if(geoLayer){ map.removeLayer(geoLayer); geoLayer=null; }
+function rebuildLayer(){
+  if(geoLayer){map.removeLayer(geoLayer);geoLayer=null;}
   if(!layerVisible) return;
-
-  // Collect all cached features for visible states
-  const visible = getVisibleStates();
-  const allFeatures = [];
-  visible.forEach(abbr => {
-    if(stateCache[abbr]) allFeatures.push(...stateCache[abbr]);
-  });
-
-  if(allFeatures.length === 0) return;
-
-  geoLayer = L.geoJSON({type:'FeatureCollection',features:allFeatures},{
-    style: featureStyle,
-    onEachFeature: function(feature, layer){
-      layer.on('click', function(e){
+  const vis=getVisibleStates();
+  const all=[];
+  vis.forEach(abbr=>{if(stateCache[abbr])all.push(...stateCache[abbr]);});
+  if(all.length===0) return;
+  geoLayer=L.geoJSON({type:'FeatureCollection',features:all},{
+    style:featureStyle,
+    onEachFeature:function(feature,layer){
+      layer.on('click',function(e){
         L.DomEvent.stopPropagation(e);
-        const p    = feature.properties||{};
-        const code = (p.ADMIN_AGENCY_CODE||p.MGMT_AGENCY_CODE||'OTHF').toUpperCase();
-        const label= LABELS[code]||code;
-        const name = p.ADMIN_UNIT_NAME||'';
-        const acres= p.GIS_ACRES?Math.round(p.GIS_ACRES).toLocaleString()+' acres':'';
-        const state= p.STATE_GEOG||'';
-        const color= agencyColor(code);
-        showInfo(label,
-          `${name ?`<span style="color:#ccc">${name}</span><br>`:''}` +
+        const p=feature.properties||{};
+        const name=p.Unit_Nm||p.Mang_Name||'Public Land';
+        const acres=p.GIS_Acres?Math.round(p.GIS_Acres).toLocaleString()+' acres':'';
+        const type=p.Mang_Type||p.Mang_Name||'';
+        const state=p.State_Nm||'';
+        // Determine color
+        const raw=(p.Mang_Name||'OTHF').toUpperCase();
+        const norm={'BUREAU OF LAND MANAGEMENT':'BLM','US FOREST SERVICE':'USFS','USDA FOREST SERVICE':'USFS','NATIONAL PARK SERVICE':'NPS','US FISH AND WILDLIFE SERVICE':'FWS','DEPARTMENT OF DEFENSE':'DOD','BUREAU OF RECLAMATION':'BOR','TRIBAL':'TRIB','STATE':'STA'};
+        const code=norm[raw]||raw.substring(0,4);
+        showInfo(name,
+          `${type&&type!==name?`<span style="color:#aaa">${type}</span><br>`:''}` +
           `${state?`State: ${state}<br>`:''}` +
           `${acres?`${acres}<br>`:''}` +
           `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
-          color
+          agencyColor(code)
         );
       });
     }
   }).addTo(map);
 }
 
-// ── Main load function ──
-async function loadVisibleStates() {
+async function loadVisibleStates(){
   if(!layerVisible) return;
-  const zoom = map.getZoom();
-
-  if(zoom < 7){
+  const zoom=map.getZoom();
+  if(zoom<7){
     if(geoLayer){map.removeLayer(geoLayer);geoLayer=null;}
-    setStatus('Zoom in to see land ownership');
-    setLoadBar(0);
+    setStatus('Zoom in to level 7+ to see land ownership');
     return;
   }
-
-  const visible = getVisibleStates();
-  if(visible.length === 0){ setStatus('Pan to the US to see land data'); return; }
-  if(visible.length > 6){
-    setStatus(`Zoom <b>${zoom}/7+</b> — zoom in more for best detail`);
+  const vis=getVisibleStates();
+  if(vis.length===0){setStatus('Pan to the US');return;}
+  if(vis.length>8){
+    setStatus(`Zoom <b>${zoom}</b> — zoom in more for detail`);
+    rebuildLayer(); return;
+  }
+  const toFetch=vis.filter(s=>!stateCache[s]);
+  if(toFetch.length===0){
     rebuildLayer();
+    setStatus(`Zoom <b>${zoom}</b> · ${vis.join(', ')}`);
     return;
   }
-
-  // Find states not yet cached
-  const toFetch = visible.filter(s => !stateCache[s]);
-  if(toFetch.length === 0){
-    rebuildLayer();
-    setStatus(`Zoom <b>${zoom}</b> · ${visible.join(', ')}`);
-    return;
-  }
-
-  isLoading = true;
   setLoadBar(10);
   setStatus(`Loading ${toFetch.join(', ')}…`);
-
-  try {
-    let done = 0;
-    await Promise.all(toFetch.map(async abbr => {
+  try{
+    let done=0;
+    await Promise.all(toFetch.map(async abbr=>{
       await fetchState(abbr);
       done++;
-      setLoadBar(10 + Math.round((done/toFetch.length)*80));
+      setLoadBar(10+Math.round((done/toFetch.length)*80));
     }));
     rebuildLayer();
-    setLoadBar(100);
-    setTimeout(()=>setLoadBar(0),400);
-    setStatus(`Zoom <b>${zoom}</b> · ${visible.join(', ')}`);
-  } catch(err){
+    setLoadBar(100);setTimeout(()=>setLoadBar(0),400);
+    setStatus(`Zoom <b>${zoom}</b> · ${vis.join(', ')}`);
+  }catch(err){
     setLoadBar(0);
-    setStatus('Error loading data — check connection');
+    setStatus('Error loading — check connection');
   }
-  isLoading = false;
 }
 
-function scheduleLoad(){
-  clearTimeout(loadTimer);
-  loadTimer = setTimeout(loadVisibleStates, 600);
-}
-
-map.on('moveend', scheduleLoad);
-map.on('zoomend', scheduleLoad);
+function scheduleLoad(){clearTimeout(loadTimer);loadTimer=setTimeout(loadVisibleStates,600);}
+map.on('moveend',scheduleLoad);
+map.on('zoomend',scheduleLoad);
 loadVisibleStates();
 
-// ── Base switcher ──
 function setBase(type){
   map.removeLayer(currentBase);
   ['btn-topo','btn-satellite','btn-street'].forEach(id=>document.getElementById(id).classList.remove('active'));
@@ -338,7 +295,6 @@ function setBase(type){
   if(geoLayer) geoLayer.bringToFront();
 }
 
-// ── Toggle ──
 function toggleLayer(){
   const btn=document.getElementById('btn-layer');
   if(layerVisible){
@@ -350,13 +306,11 @@ function toggleLayer(){
   }
 }
 
-// ── Opacity ──
 function updateOpacity(val){
   currentOpacity=val/100;
   if(geoLayer) geoLayer.setStyle({fillOpacity:currentOpacity});
 }
 
-// ── My Location ──
 let locationMarker=null,locationCircle=null;
 function locateMe(){
   const btn=document.getElementById('locate-btn');
@@ -367,7 +321,7 @@ map.on('locationfound',function(e){
   const btn=document.getElementById('locate-btn');
   btn.textContent='📍 My Location';btn.disabled=false;
   if(locationMarker){map.removeLayer(locationMarker);map.removeLayer(locationCircle);}
-  locationCircle=L.circle(e.latlng,{radius:e.accuracy,color:'#3b82f6',fillColor:'#3b82f6',fillOpacity:0.12,weight:1}).addTo(map);
+  locationCircle=L.circle(e.latlng,{radius:e.accuracy,color:'#3b82f6',fillColor:'#3b82f6',fillOpacity:0.15,weight:1}).addTo(map);
   locationMarker=L.circleMarker(e.latlng,{radius:10,color:'#fff',weight:2.5,fillColor:'#3b82f6',fillOpacity:1}).addTo(map);
   locationMarker.bindPopup('<b>You are here</b>Tap any colored area to see ownership').openPopup();
   if(geoLayer) geoLayer.bringToFront();
@@ -378,51 +332,14 @@ map.on('locationerror',function(){
   alert('Location access denied. Please enable location in your browser/phone settings.');
 });
 
-// ── Tap to identify (map click fallback) ──
-map.on('click',async function(e){
-  const {lat,lng}=e.latlng;
-  showInfo('Looking up…','Fetching ownership data…','#f0a500');
-  try{
-    const url=`https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/1/query?`+
-      `geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects`+
-      `&outFields=ADMIN_AGENCY_CODE,ADMIN_UNIT_NAME,MGMT_AGENCY_CODE,GIS_ACRES,STATE_GEOG&returnGeometry=false&f=json`;
-    const resp=await fetch(url);
-    const data=await resp.json();
-    if(data.features&&data.features.length>0){
-      const f=data.features[0].attributes;
-      const code=(f.ADMIN_AGENCY_CODE||f.MGMT_AGENCY_CODE||'OTHF').toUpperCase();
-      showInfo(LABELS[code]||code,
-        `${f.ADMIN_UNIT_NAME?`<span style="color:#ccc">${f.ADMIN_UNIT_NAME}</span><br>`:''}`+
-        `${f.STATE_GEOG?`State: ${f.STATE_GEOG}<br>`:''}`+
-        `${f.GIS_ACRES?Math.round(f.GIS_ACRES).toLocaleString()+' acres<br>':''}`+
-        `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`,
-        agencyColor(code));
-      return;
-    }
-  }catch(err){}
-  try{
-    const url2=`https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Protected_Areas/FeatureServer/0/query?`+
-      `geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects`+
-      `&outFields=Mang_Name,Unit_Nm,GIS_Acres,Mang_Type,State_Nm&returnGeometry=false&f=json`;
-    const r2=await fetch(url2);const d2=await r2.json();
-    if(d2.features&&d2.features.length>0){
-      const f=d2.features[0].attributes;
-      showInfo(f.Unit_Nm||f.Mang_Name||'Protected Area',
-        `${f.Mang_Type?f.Mang_Type+'<br>':''}`+
-        `${f.State_Nm?'State: '+f.State_Nm+'<br>':''}`+
-        `${f.GIS_Acres?Math.round(f.GIS_Acres).toLocaleString()+' acres<br>':''}`+
-        `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`,
-        '#6699CD');
-      return;
-    }
-  }catch(err){}
+map.on('click',function(e){
+  // Only show "no data" if no polygon was clicked
   showInfo('Private / Unclassified',
     `No public land record at this point.<br>`+
-    `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`,
+    `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
     '#778899');
 });
 
-// ── UI helpers ──
 function showInfo(title,body,borderColor){
   const p=document.getElementById('info-panel');
   document.getElementById('info-title').textContent=title;
