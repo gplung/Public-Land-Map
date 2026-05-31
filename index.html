@@ -38,8 +38,7 @@
     font-family:'Barlow Condensed',sans-serif; font-size:0.78rem; font-weight:600;
     letter-spacing:0.06em; text-transform:uppercase; padding:5px 11px;
     border-radius:4px; border:1px solid var(--border); background:var(--bg);
-    color:var(--text); cursor:pointer; transition:background 0.15s,border-color 0.15s;
-    white-space:nowrap;
+    color:var(--text); cursor:pointer; transition:background 0.15s; white-space:nowrap;
   }
   .btn:hover  { background:#21262d; border-color:var(--accent); }
   .btn.active { background:var(--accent); color:#000; border-color:var(--accent); }
@@ -51,10 +50,18 @@
   }
   input[type=range] { width:70px; accent-color:var(--accent); cursor:pointer; }
   #map { flex:1; width:100%; }
-  #loadbar {
-    position:absolute; top:0; left:0; width:0%; height:3px;
-    background:var(--accent); z-index:2000; transition:width 0.3s;
+
+  /* Zoom indicator */
+  #zoom-badge {
+    position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    z-index:999; background:rgba(13,17,23,0.85);
+    border:1px solid var(--border); border-radius:12px;
+    padding:3px 10px; font-family:'Barlow Condensed',sans-serif;
+    font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--muted); pointer-events:none;
   }
+  #zoom-badge span { color:var(--accent); font-weight:700; }
+
   #legend {
     position:absolute; bottom:28px; right:8px; z-index:999;
     background:rgba(13,17,23,0.93); border:1px solid var(--border);
@@ -63,20 +70,16 @@
   #legend-toggle {
     font-family:'Barlow Condensed',sans-serif; font-size:0.72rem; font-weight:700;
     letter-spacing:0.1em; text-transform:uppercase; color:var(--accent);
-    cursor:pointer; display:flex; align-items:center; justify-content:space-between;
-    user-select:none;
+    cursor:pointer; display:flex; align-items:center; justify-content:space-between; user-select:none;
   }
   #legend-body { margin-top:7px; display:flex; flex-direction:column; gap:4px; }
   .legend-row  { display:flex; align-items:center; gap:7px; font-size:0.76rem; color:var(--text); }
-  .legend-swatch {
-    width:18px; height:14px; border-radius:2px; flex-shrink:0;
-    border:1px solid rgba(255,255,255,0.2);
-  }
+  .legend-swatch { width:18px; height:14px; border-radius:2px; flex-shrink:0; border:1px solid rgba(255,255,255,0.2); }
+
   #info-panel {
     position:absolute; bottom:28px; left:8px; z-index:999;
     background:rgba(13,17,23,0.96); border:2px solid var(--accent);
-    border-radius:6px; padding:11px 13px; max-width:260px;
-    display:none; backdrop-filter:blur(8px);
+    border-radius:6px; padding:11px 13px; max-width:260px; display:none; backdrop-filter:blur(8px);
   }
   #info-panel h3 {
     font-family:'Barlow Condensed',sans-serif; font-size:0.88rem; font-weight:700;
@@ -84,11 +87,9 @@
     margin-bottom:5px; padding-right:16px;
   }
   #info-panel p { font-size:0.79rem; color:var(--text); line-height:1.6; }
-  #info-close {
-    position:absolute; top:7px; right:9px; cursor:pointer;
-    color:var(--muted); font-size:0.95rem;
-  }
+  #info-close { position:absolute; top:7px; right:9px; cursor:pointer; color:var(--muted); font-size:0.95rem; }
   #info-close:hover { color:var(--text); }
+
   .leaflet-control-attribution {
     background:rgba(13,17,23,0.7)!important; color:var(--muted)!important; font-size:0.6rem!important;
   }
@@ -101,11 +102,9 @@
 </head>
 <body>
 
-<div id="loadbar"></div>
-
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #7</span>
+  <span class="build-tag">Build #8</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -121,6 +120,7 @@
 </div>
 
 <div id="map"></div>
+<div id="zoom-badge">Zoom <span id="zoom-num">5</span></div>
 
 <div id="legend">
   <div id="legend-toggle" onclick="toggleLegend()">Legend <span id="legend-arrow">▲</span></div>
@@ -144,28 +144,21 @@
 </div>
 
 <script>
-// ══════════════════════════════════════════
-// AGENCY TABLES — colors match PAD-US standard
-// ══════════════════════════════════════════
 const COLORS = {
-  'BLM':'#F0B000','USFS':'#267300','NPS':'#6699CD',
-  'FWS':'#70A800','DOD':'#FF0000','BOR':'#004DA8',
-  'TRIB':'#C500FF','STA':'#FF7F7F','STAT':'#FF7F7F',
-  'LOC':'#FFAA00','NGO':'#FF82BA','OTHF':'#FFBEE8'
+  'BLM':'#F0B000','USFS':'#267300','NPS':'#6699CD','FWS':'#70A800',
+  'DOD':'#FF0000','BOR':'#004DA8','TRIB':'#C500FF',
+  'STA':'#FF7F7F','STAT':'#FF7F7F','LOC':'#FFAA00','OTHF':'#FFBEE8'
 };
 const LABELS = {
   'BLM':'Bureau of Land Management','USFS':'US Forest Service',
   'NPS':'National Park Service','FWS':'US Fish & Wildlife Service',
   'DOD':'Dept. of Defense (Military)','BOR':'Bureau of Reclamation',
   'TRIB':'Tribal Land','STA':'State Land / Trust','STAT':'State Land / Trust',
-  'LOC':'Local Government','NGO':'Non-Governmental Org',
-  'OTHF':'Other Federal','PVT':'Private Land'
+  'LOC':'Local Government','OTHF':'Other Federal','PVT':'Private Land'
 };
-function agencyColor(code){ return COLORS[(code||'').toUpperCase()] || '#FFBEE8'; }
+function agencyColor(c){ return COLORS[(c||'').toUpperCase()]||'#FFBEE8'; }
 
-// ══════════════════════════════════════════
-// BASE LAYERS
-// ══════════════════════════════════════════
+// ── Base layers ──
 const topoLayer = L.tileLayer(
   'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
   {attribution:'USGS Topo',maxZoom:16,zIndex:1});
@@ -176,284 +169,251 @@ const streetLayer = L.tileLayer(
   'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   {attribution:'© OpenStreetMap',maxZoom:19,zIndex:1});
 
-// ══════════════════════════════════════════
-// MAP INIT
-// ══════════════════════════════════════════
 const map = L.map('map',{center:[39.5,-98.35],zoom:5,layers:[topoLayer]});
 let currentBase = topoLayer;
+let currentOpacity = 0.70;
+let layerVisible = true;
+
+// ── Zoom badge ──
+function updateZoomBadge() {
+  document.getElementById('zoom-num').textContent = map.getZoom();
+}
+map.on('zoomend', updateZoomBadge);
+updateZoomBadge();
 
 // ══════════════════════════════════════════
-// OWNERSHIP OVERLAY
-// PAD-US pre-rendered tile service from ArcGIS Online
-// This is the SAME dataset as PAD-US but served as
-// pre-rendered image tiles with SOLID FILLS already baked in
-// Colors match the official federal land management color scheme
+// OWNERSHIP LAYER
+// Using the ArcGIS REST export endpoint — this
+// requests a server-rendered image for the exact
+// map extent, with SOLID FILLS already rendered.
+// We use the USGS PAD-US map service which has
+// proper color-coded filled polygons by agency.
 // ══════════════════════════════════════════
-const padTiles = L.tileLayer(
-  'https://services.arcgisonline.com/arcgis/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-  {opacity:0, zIndex:5} // placeholder — real layer below
+
+// Three pre-rendered tile services stacked:
+// 1. BLM lands (yellow) — BLM's own cache
+// 2. USFS lands (green) — Forest Service
+// 3. NPS + other federal (blue/etc) — PAD-US
+
+// Best available: ESRI's USA Public Land layer
+// served as MapServer tiles — these ARE pre-rendered
+// solid fills, different service URL from Build 3/4
+const ownershipLayer = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  {opacity:0} // just a placeholder
 );
 
-// The real one: BLM's own pre-rendered SMA tile cache
-// This renders solid filled color polygons for every agency
-const smaColorTiles = L.tileLayer.wms(
-  'https://gis.blm.gov/arcgis/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/WMSServer',
-  {
-    layers: '1',
-    styles: '',
-    format: 'image/png',
-    transparent: true,
-    opacity: 0.70,
-    zIndex: 10,
-    attribution: 'BLM SMA'
-  }
-);
+// The correct approach: use the Dynamic Map Service export
+// which renders solid fills. We build a custom tile layer
+// that calls the export endpoint with exact bbox per tile.
 
-// ══════════════════════════════════════════
-// CANVAS OVERLAY — we draw our OWN solid fills
-// on top using a canvas tile layer that queries
-// the BLM REST API per tile and renders fills
-// ══════════════════════════════════════════
+function makeDynamicLayer(serviceUrl, layerIds, opacity) {
+  return L.TileLayer.extend({
+    getTileUrl: function(coords) {
+      const tileSize = this.options.tileSize || 256;
+      const nwPx = coords.scaleBy({x:tileSize,y:tileSize});
+      const sePx = nwPx.add({x:tileSize,y:tileSize});
+      const nw   = map.unproject(nwPx, coords.z);
+      const se   = map.unproject(sePx, coords.z);
+      const bbox = `${nw.lng},${se.lat},${se.lng},${nw.lat}`;
+      return `${serviceUrl}/export?` +
+        `bbox=${bbox}&bboxSR=4326&size=${tileSize},${tileSize}&imageSR=4326` +
+        `&layers=show:${layerIds}&format=png32&transparent=true&f=image`;
+    },
+    createTile: function(coords, done) {
+      const img = document.createElement('img');
+      img.crossOrigin = 'anonymous';
+      img.onload  = () => done(null, img);
+      img.onerror = () => done(null, img);
+      img.src = this.getTileUrl(coords);
+      return img;
+    }
+  });
+}
 
-// Create a canvas-based overlay
-const CanvasLayer = L.GridLayer.extend({
-  createTile: function(coords, done) {
-    const tile   = document.createElement('canvas');
-    const size   = this.getTileSize();
-    tile.width   = size.x;
-    tile.height  = size.y;
-    const ctx    = tile.getContext('2d');
-    const zoom   = coords.z;
-
-    if (zoom < 7) { done(null, tile); return tile; }
-
-    // Convert tile coords to bbox
-    const nwPoint = coords.scaleBy(size);
-    const sePoint = nwPoint.add(size);
-    const nw = map.unproject(nwPoint, zoom);
-    const se = map.unproject(sePoint, zoom);
-    const xmin = nw.lng.toFixed(6), ymin = se.lat.toFixed(6);
-    const xmax = se.lng.toFixed(6), ymax = nw.lat.toFixed(6);
+// PAD-US via USGS National Map — dynamic export
+// Layer 0 = Protected areas with agency fill colors
+const PADLayer = L.TileLayer.extend({
+  getTileUrl: function(coords) {
+    const sz   = 256;
+    const nwPx = coords.scaleBy({x:sz,y:sz});
+    const sePx = nwPx.add({x:sz,y:sz});
+    const nw   = map.unproject(nwPx, coords.z);
+    const se   = map.unproject(sePx, coords.z);
+    const xmin = nw.lng, ymin = se.lat, xmax = se.lng, ymax = nw.lat;
     const bbox = `${xmin},${ymin},${xmax},${ymax}`;
-
-    const url =
-      `https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/1/query?` +
-      `geometry=${bbox}&geometryType=esriGeometryEnvelope&inSR=4326` +
-      `&spatialRel=esriSpatialRelIntersects` +
-      `&outFields=ADMIN_AGENCY_CODE,MGMT_AGENCY_CODE` +
-      `&returnGeometry=true&outSR=4326&resultRecordCount=200&f=geojson`;
-
-    fetch(url).then(r => r.json()).then(geojson => {
-      if (!geojson.features) { done(null, tile); return; }
-
-      geojson.features.forEach(feature => {
-        const props = feature.properties || {};
-        const code  = (props.ADMIN_AGENCY_CODE || props.MGMT_AGENCY_CODE || 'OTHF').toUpperCase();
-        const hex   = agencyColor(code);
-
-        // Parse hex color
-        const r = parseInt(hex.slice(1,3),16);
-        const g = parseInt(hex.slice(3,5),16);
-        const b = parseInt(hex.slice(5,7),16);
-        ctx.fillStyle   = `rgba(${r},${g},${b},${currentOpacity})`;
-        ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
-        ctx.lineWidth   = 1;
-
-        // Project GeoJSON coords to canvas pixels
-        function drawRing(ring) {
-          ctx.beginPath();
-          ring.forEach((pt, i) => {
-            const latlng  = L.latLng(pt[1], pt[0]);
-            const pixelPt = map.project(latlng, zoom).subtract(nwPoint);
-            if (i === 0) ctx.moveTo(pixelPt.x, pixelPt.y);
-            else         ctx.lineTo(pixelPt.x, pixelPt.y);
-          });
-          ctx.closePath();
-        }
-
-        const geom = feature.geometry;
-        if (!geom) return;
-
-        if (geom.type === 'Polygon') {
-          geom.coordinates.forEach((ring, i) => {
-            drawRing(ring);
-            if (i === 0) { ctx.fill(); ctx.stroke(); }
-          });
-        } else if (geom.type === 'MultiPolygon') {
-          geom.coordinates.forEach(poly => {
-            poly.forEach((ring, i) => {
-              drawRing(ring);
-              if (i === 0) { ctx.fill(); ctx.stroke(); }
-            });
-          });
-        }
-      });
-      done(null, tile);
-    }).catch(() => done(null, tile));
-
-    return tile;
+    // USGS PAD-US Map Service — proper solid fills
+    return `https://gis1.usgs.gov/arcgis/rest/services/PADUS/PADUS_Manager/MapServer/export?` +
+      `bbox=${bbox}&bboxSR=4326&size=${sz},${sz}&imageSR=4326` +
+      `&layers=show:0&format=png32&transparent=true&f=image`;
+  },
+  createTile: function(coords, done) {
+    const img = document.createElement('img');
+    img.crossOrigin = '';
+    img.style.width  = '256px';
+    img.style.height = '256px';
+    img.style.opacity = currentOpacity;
+    img.onload  = () => done(null, img);
+    img.onerror = () => { done(null, img); }
+    img.src = this.getTileUrl(coords);
+    return img;
   }
 });
 
-let canvasLayer = new CanvasLayer({ zIndex: 10, tileSize: 256 });
-canvasLayer.addTo(map);
-let layerVisible = true;
-let currentOpacity = 0.70;
+// Also try the BLM dynamic export as backup layer
+const BLMLayer = L.TileLayer.extend({
+  getTileUrl: function(coords) {
+    const sz   = 256;
+    const nwPx = coords.scaleBy({x:sz,y:sz});
+    const sePx = nwPx.add({x:sz,y:sz});
+    const nw   = map.unproject(nwPx, coords.z);
+    const se   = map.unproject(sePx, coords.z);
+    const bbox = `${nw.lng},${se.lat},${se.lng},${nw.lat}`;
+    return `https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/export?` +
+      `bbox=${bbox}&bboxSR=4326&size=${sz},${sz}&imageSR=4326` +
+      `&layers=show:1&format=png32&transparent=true&f=image`;
+  },
+  createTile: function(coords, done) {
+    const img = document.createElement('img');
+    img.crossOrigin = '';
+    img.style.opacity = currentOpacity;
+    img.onload  = () => done(null, img);
+    img.onerror = () => done(null, img);
+    img.src = this.getTileUrl(coords);
+    return img;
+  }
+});
 
-// ══════════════════════════════════════════
-// BASE SWITCHER
-// ══════════════════════════════════════════
+let padLayer = new PADLayer({tileSize:256, zIndex:10, opacity:1});
+let blmLayer = new BLMLayer({tileSize:256, zIndex:11, opacity:1});
+
+padLayer.addTo(map);
+blmLayer.addTo(map);
+
+// ── Base switcher ──
 function setBase(type) {
   map.removeLayer(currentBase);
   ['btn-topo','btn-satellite','btn-street'].forEach(id =>
     document.getElementById(id).classList.remove('active'));
-  if (type==='topo')        { currentBase=topoLayer;       document.getElementById('btn-topo').classList.add('active'); }
-  else if(type==='satellite'){ currentBase=satelliteLayer;  document.getElementById('btn-satellite').classList.add('active'); }
-  else                      { currentBase=streetLayer;     document.getElementById('btn-street').classList.add('active'); }
+  if (type==='topo')         { currentBase=topoLayer;      document.getElementById('btn-topo').classList.add('active'); }
+  else if(type==='satellite'){ currentBase=satelliteLayer; document.getElementById('btn-satellite').classList.add('active'); }
+  else                       { currentBase=streetLayer;    document.getElementById('btn-street').classList.add('active'); }
   currentBase.addTo(map);
   currentBase.bringToBack();
 }
 
-// ══════════════════════════════════════════
-// TOGGLE
-// ══════════════════════════════════════════
+// ── Toggle ──
 function toggleLayer() {
   const btn = document.getElementById('btn-layer');
   if (layerVisible) {
-    map.removeLayer(canvasLayer);
+    map.removeLayer(padLayer);
+    map.removeLayer(blmLayer);
     btn.classList.remove('active');
     layerVisible = false;
   } else {
-    canvasLayer.addTo(map);
+    padLayer.addTo(map);
+    blmLayer.addTo(map);
     btn.classList.add('active');
     layerVisible = true;
   }
 }
 
-// ══════════════════════════════════════════
-// OPACITY — redraw tiles at new opacity
-// ══════════════════════════════════════════
+// ── Opacity ──
 function updateOpacity(val) {
   currentOpacity = val / 100;
+  // Rebuild both layers at new opacity
   if (layerVisible) {
-    map.removeLayer(canvasLayer);
-    canvasLayer = new CanvasLayer({ zIndex: 10, tileSize: 256 });
-    canvasLayer.addTo(map);
+    map.removeLayer(padLayer);
+    map.removeLayer(blmLayer);
+    padLayer = new PADLayer({tileSize:256, zIndex:10, opacity:1});
+    blmLayer = new BLMLayer({tileSize:256, zIndex:11, opacity:1});
+    padLayer.addTo(map);
+    blmLayer.addTo(map);
   }
 }
 
-// ══════════════════════════════════════════
-// MY LOCATION
-// ══════════════════════════════════════════
-let locationMarker = null, locationCircle = null;
+// ── My Location ──
+let locationMarker=null, locationCircle=null;
 function locateMe() {
-  const btn = document.getElementById('locate-btn');
-  btn.textContent = '⏳ Locating…';
-  btn.disabled = true;
-  map.locate({setView:true, maxZoom:13});
+  const btn=document.getElementById('locate-btn');
+  btn.textContent='⏳ Locating…'; btn.disabled=true;
+  map.locate({setView:true,maxZoom:13});
 }
-map.on('locationfound', function(e) {
-  const btn = document.getElementById('locate-btn');
-  btn.textContent = '📍 My Location';
-  btn.disabled = false;
-  if (locationMarker) { map.removeLayer(locationMarker); map.removeLayer(locationCircle); }
-  locationCircle = L.circle(e.latlng,{
-    radius:e.accuracy, color:'#3b82f6', fillColor:'#3b82f6', fillOpacity:0.12, weight:1
-  }).addTo(map);
-  locationMarker = L.circleMarker(e.latlng,{
-    radius:10, color:'#fff', weight:2.5, fillColor:'#3b82f6', fillOpacity:1
-  }).addTo(map);
+map.on('locationfound',function(e){
+  const btn=document.getElementById('locate-btn');
+  btn.textContent='📍 My Location'; btn.disabled=false;
+  if(locationMarker){map.removeLayer(locationMarker);map.removeLayer(locationCircle);}
+  locationCircle=L.circle(e.latlng,{radius:e.accuracy,color:'#3b82f6',fillColor:'#3b82f6',fillOpacity:0.12,weight:1}).addTo(map);
+  locationMarker=L.circleMarker(e.latlng,{radius:10,color:'#fff',weight:2.5,fillColor:'#3b82f6',fillOpacity:1}).addTo(map);
   locationMarker.bindPopup('<b>You are here</b>Tap any colored area to see ownership').openPopup();
 });
-map.on('locationerror', function() {
-  const btn = document.getElementById('locate-btn');
-  btn.textContent = '📍 My Location';
-  btn.disabled = false;
+map.on('locationerror',function(){
+  const btn=document.getElementById('locate-btn');
+  btn.textContent='📍 My Location'; btn.disabled=false;
   alert('Location access denied. Please enable location in your browser/phone settings.');
 });
 
-// ══════════════════════════════════════════
-// TAP TO IDENTIFY
-// ══════════════════════════════════════════
+// ── Tap to identify ──
 map.on('click', async function(e) {
-  const {lat,lng} = e.latlng;
+  const {lat,lng}=e.latlng;
   showInfo('Looking up…','Fetching ownership data…','#f0a500');
-  setLoadBar(30);
   try {
-    const url =
-      `https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/1/query?` +
-      `geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326` +
-      `&spatialRel=esriSpatialRelIntersects` +
-      `&outFields=ADMIN_AGENCY_CODE,ADMIN_UNIT_NAME,MGMT_AGENCY_CODE,GIS_ACRES,STATE_GEOG` +
+    const url=`https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/1/query?`+
+      `geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326`+
+      `&spatialRel=esriSpatialRelIntersects`+
+      `&outFields=ADMIN_AGENCY_CODE,ADMIN_UNIT_NAME,MGMT_AGENCY_CODE,GIS_ACRES,STATE_GEOG`+
       `&returnGeometry=false&f=json`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    setLoadBar(80);
-    if (data.features && data.features.length > 0) {
-      const f     = data.features[0].attributes;
-      const code  = (f.ADMIN_AGENCY_CODE||f.MGMT_AGENCY_CODE||'OTHF').toUpperCase();
-      const label = LABELS[code]||code;
-      const name  = f.ADMIN_UNIT_NAME||'';
-      const acres = f.GIS_ACRES ? Math.round(f.GIS_ACRES).toLocaleString()+' acres':'';
-      const state = f.STATE_GEOG||'';
-      setLoadBar(100); setTimeout(()=>setLoadBar(0),400);
-      showInfo(label,
-        `${name  ? `<span style="color:#ccc">${name}</span><br>`:``}` +
-        `${state ? `State: ${state}<br>`:''}` +
-        `${acres ? `${acres}<br>`:''}` +
+    const resp=await fetch(url);
+    const data=await resp.json();
+    if(data.features&&data.features.length>0){
+      const f=data.features[0].attributes;
+      const code=(f.ADMIN_AGENCY_CODE||f.MGMT_AGENCY_CODE||'OTHF').toUpperCase();
+      showInfo(LABELS[code]||code,
+        `${f.ADMIN_UNIT_NAME?`<span style="color:#ccc">${f.ADMIN_UNIT_NAME}</span><br>`:''}` +
+        `${f.STATE_GEOG?`State: ${f.STATE_GEOG}<br>`:''}` +
+        `${f.GIS_ACRES?Math.round(f.GIS_ACRES).toLocaleString()+' acres<br>':''}` +
         `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`,
-        agencyColor(code)
-      );
+        agencyColor(code));
       return;
     }
-    // PAD-US fallback
-    const url2 =
-      `https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Protected_Areas/FeatureServer/0/query?` +
-      `geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326` +
-      `&spatialRel=esriSpatialRelIntersects` +
-      `&outFields=Mang_Name,Unit_Nm,GIS_Acres,Mang_Type,State_Nm` +
+  } catch(err){}
+  // PAD-US fallback
+  try {
+    const url2=`https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Protected_Areas/FeatureServer/0/query?`+
+      `geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326`+
+      `&spatialRel=esriSpatialRelIntersects`+
+      `&outFields=Mang_Name,Unit_Nm,GIS_Acres,Mang_Type,State_Nm`+
       `&returnGeometry=false&f=json`;
-    const resp2 = await fetch(url2);
-    const data2 = await resp2.json();
-    setLoadBar(100); setTimeout(()=>setLoadBar(0),400);
-    if (data2.features && data2.features.length > 0) {
-      const f    = data2.features[0].attributes;
-      const name = f.Unit_Nm||f.Mang_Name||'Protected Area';
-      const acres= f.GIS_Acres ? Math.round(f.GIS_Acres).toLocaleString()+' acres':'';
-      const type = f.Mang_Type||'';
-      const state= f.State_Nm||'';
-      showInfo(name,
-        `${type  ? `${type}<br>`:''}` +
-        `${state ? `State: ${state}<br>`:''}` +
-        `${acres ? `${acres}<br>`:''}` +
+    const r2=await fetch(url2);
+    const d2=await r2.json();
+    if(d2.features&&d2.features.length>0){
+      const f=d2.features[0].attributes;
+      showInfo(f.Unit_Nm||f.Mang_Name||'Protected Area',
+        `${f.Mang_Type?f.Mang_Type+'<br>':''}` +
+        `${f.State_Nm?'State: '+f.State_Nm+'<br>':''}` +
+        `${f.GIS_Acres?Math.round(f.GIS_Acres).toLocaleString()+' acres<br>':''}` +
         `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`,
-        '#6699CD'
-      );
+        '#6699CD');
       return;
     }
-  } catch(err) { setLoadBar(0); }
-  setLoadBar(0);
+  } catch(err){}
   showInfo('Private / Unclassified',
-    `No public land record at this point.<br>` +
+    `No public land record at this point.<br>`+
     `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`,
-    '#778899'
-  );
+    '#778899');
 });
 
-// ══════════════════════════════════════════
-// UI HELPERS
-// ══════════════════════════════════════════
-function showInfo(title, body, borderColor) {
-  const panel = document.getElementById('info-panel');
-  document.getElementById('info-title').textContent = title;
-  document.getElementById('info-body').innerHTML    = body;
-  panel.style.borderColor = borderColor||'var(--accent)';
-  panel.style.display = 'block';
+// ── UI helpers ──
+function showInfo(title,body,borderColor){
+  const p=document.getElementById('info-panel');
+  document.getElementById('info-title').textContent=title;
+  document.getElementById('info-body').innerHTML=body;
+  p.style.borderColor=borderColor||'var(--accent)';
+  p.style.display='block';
 }
-function closeInfo() { document.getElementById('info-panel').style.display='none'; }
-function setLoadBar(pct) { document.getElementById('loadbar').style.width=pct+'%'; }
+function closeInfo(){document.getElementById('info-panel').style.display='none';}
 let legendOpen=true;
-function toggleLegend() {
+function toggleLegend(){
   legendOpen=!legendOpen;
   document.getElementById('legend-body').style.display=legendOpen?'flex':'none';
   document.getElementById('legend-arrow').textContent=legendOpen?'▲':'▼';
