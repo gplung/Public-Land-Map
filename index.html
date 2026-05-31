@@ -24,6 +24,7 @@
   #opacity-wrap{display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted);font-family:'Barlow Condensed',sans-serif;letter-spacing:0.05em;text-transform:uppercase;}
   input[type=range]{width:70px;accent-color:var(--accent);cursor:pointer;}
   #map{flex:1;width:100%;}
+  #loadbar{position:absolute;top:0;left:0;width:0%;height:3px;background:var(--accent);z-index:2000;transition:width 0.4s;}
   #statusbar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:999;background:rgba(13,17,23,0.88);border:1px solid var(--border);border-radius:12px;padding:4px 14px;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);pointer-events:none;white-space:nowrap;}
   #statusbar b{color:var(--accent);}
   #legend{position:absolute;bottom:40px;right:8px;z-index:999;background:rgba(13,17,23,0.95);border:1px solid var(--border);border-radius:6px;padding:9px 11px;min-width:205px;backdrop-filter:blur(8px);}
@@ -44,9 +45,10 @@
 </style>
 </head>
 <body>
+<div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #12</span>
+  <span class="build-tag">Build #13</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -55,12 +57,12 @@
     <button class="btn locate" id="locate-btn"     onclick="locateMe()">📍 My Location</button>
     <div id="opacity-wrap">
       Opacity
-      <input type="range" id="opacity-slider" min="10" max="95" value="75" oninput="updateOpacity(this.value)">
+      <input type="range" id="opacity-slider" min="10" max="95" value="70" oninput="updateOpacity(this.value)">
     </div>
   </div>
 </div>
 <div id="map"></div>
-<div id="statusbar">Zoom <b id="zoom-num">5</b> — zoom in to see ownership layers</div>
+<div id="statusbar"><b>Loading land data…</b></div>
 <div id="legend">
   <div id="legend-toggle" onclick="toggleLegend()">Legend <span id="legend-arrow">▲</span></div>
   <div id="legend-body">
@@ -82,204 +84,88 @@
 </div>
 <script>
 const COLORS={'BLM':'#e6a800','USFS':'#1a6600','NPS':'#1a6699','FWS':'#4d9900','DOD':'#cc0000','BOR':'#003399','TRIB':'#6600cc','STA':'#cc3300','STAT':'#cc3300','LOC':'#cc6600','OTHF':'#666699'};
-const LABELS={'BLM':'Bureau of Land Management','USFS':'US Forest Service','NPS':'National Park Service','FWS':'US Fish & Wildlife Service','DOD':'Dept. of Defense (Military)','BOR':'Bureau of Reclamation','TRIB':'Tribal Land','STA':'State Land / Trust','STAT':'State Land / Trust','LOC':'Local Government','OTHF':'Other Federal','PVT':'Private Land'};
-const MANG_TO_CODE={'BUREAU OF LAND MANAGEMENT':'BLM','BLM':'BLM','US FOREST SERVICE':'USFS','USDA FOREST SERVICE':'USFS','USFS':'USFS','NATIONAL PARK SERVICE':'NPS','NPS':'NPS','US FISH AND WILDLIFE SERVICE':'FWS','USFWS':'FWS','FWS':'FWS','DEPARTMENT OF DEFENSE':'DOD','DOD':'DOD','BUREAU OF RECLAMATION':'BOR','BOR':'BOR','TRIBAL':'TRIB','AMERICAN INDIAN LANDS':'TRIB','STATE':'STA','STATE LAND':'STA','STA':'STA'};
-function resolveCode(raw){return MANG_TO_CODE[(raw||'').toUpperCase().trim()]||(raw||'OTHF').toUpperCase().substring(0,4);}
-function agencyColor(c){return COLORS[c]||'#666699';}
+const LABELS={'BLM':'Bureau of Land Management','USFS':'US Forest Service','NPS':'National Park Service','FWS':'US Fish & Wildlife Service','DOD':'Dept. of Defense (Military)','BOR':'Bureau of Reclamation','TRIB':'Tribal Land','STA':'State Land / Trust','STAT':'State Land / Trust','LOC':'Local Government','OTHF':'Other Federal'};
+function agencyColor(c){return COLORS[(c||'OTHF').toUpperCase()]||'#666699';}
 
-// ── Base layers ──
 const topoLayer     =L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',{attribution:'USGS Topo',maxZoom:16,zIndex:1});
 const satelliteLayer=L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}',{attribution:'USGS Imagery',maxZoom:16,zIndex:1});
 const streetLayer   =L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19,zIndex:1});
 
 const map=L.map('map',{center:[39.5,-98.35],zoom:5,layers:[topoLayer]});
-let currentBase=topoLayer, currentOpacity=0.75, layerVisible=true;
-
-// ── Zoom display ──
-function updateZoom(){document.getElementById('zoom-num').textContent=map.getZoom();}
-map.on('zoomend',updateZoom);
+let currentBase=topoLayer, currentOpacity=0.70, layerVisible=true;
+let geoLayer=null;
 
 // ══════════════════════════════════════════
-// OWNERSHIP LAYER — Build #12
-// Strategy: Use the Overpass API (OpenStreetMap)
-// which is completely free, open CORS, and has
-// all federal/state land data tagged.
-// Query by bounding box as user pans.
+// LOAD padus.geojson — same origin as index.html
+// No CORS, no API key, no external dependency
 // ══════════════════════════════════════════
-
-// OSM boundary types for public land
-// leisure=nature_reserve, boundary=protected_area,
-// landuse=military, landuse=forest, etc.
-
-const stateCache={};
-let geoLayer=null, loadTimer=null;
-
-function featureStyle(feature){
-  const p=feature.properties||{};
-  const code=resolveCode(p.agency||p.operator||p.name||'OTHF');
-  const color=agencyColor(code);
-  return {fillColor:color,fillOpacity:currentOpacity,color:color,weight:1.5,opacity:1.0};
-}
-
-// Convert OSM tags to agency code
-function osmTagsToCode(tags){
-  const op=(tags.operator||'').toUpperCase();
-  const luse=(tags.landuse||'').toLowerCase();
-  const lei=(tags.leisure||'').toLowerCase();
-  const bnd=(tags.boundary||'').toLowerCase();
-  const own=(tags.ownership||'').toLowerCase();
-  const name=(tags.name||'').toUpperCase();
-
-  if(op.includes('BUREAU OF LAND MANAGEMENT')||op.includes('BLM')) return 'BLM';
-  if(op.includes('FOREST SERVICE')||op.includes('USFS')||luse==='forest'&&op.includes('US')) return 'USFS';
-  if(op.includes('NATIONAL PARK')||op.includes('NPS')) return 'NPS';
-  if(op.includes('FISH AND WILDLIFE')||op.includes('FWS')) return 'FWS';
-  if(op.includes('DEFENSE')||op.includes('ARMY')||op.includes('NAVY')||op.includes('AIR FORCE')||luse==='military') return 'DOD';
-  if(op.includes('RECLAMATION')||op.includes('BOR')) return 'BOR';
-  if(own==='tribal'||own==='indian'||name.includes('INDIAN RESERVATION')) return 'TRIB';
-  if(own==='state'||op.includes('STATE OF')||op.includes('STATE LAND')) return 'STA';
-  if(luse==='forest') return 'USFS';
-  if(bnd==='protected_area'||lei==='nature_reserve') return 'NPS';
-  return 'OTHF';
-}
-
-// Build Overpass query for a bounding box
-function buildOverpassQuery(s,w,n,e){
-  // Query all relevant public land features
-  return `[out:json][timeout:25];
-(
-  way["boundary"="protected_area"](${s},${w},${n},${e});
-  way["landuse"="military"](${s},${w},${n},${e});
-  way["landuse"="forest"]["operator"~"Forest Service|USFS|BLM|Bureau",i](${s},${w},${n},${e});
-  relation["boundary"="protected_area"]["name"](${s},${w},${n},${e});
-  relation["landuse"="military"](${s},${w},${n},${e});
-);
-out geom;`;
-}
-
-// Convert Overpass geometry to GeoJSON
-function overpassToGeoJSON(elements){
-  const features=[];
-  for(const el of elements){
-    try{
-      let coords=[];
-      if(el.type==='way'&&el.geometry){
-        coords=[el.geometry.map(pt=>[pt.lon,pt.lat])];
-        if(coords[0].length<4) continue;
-        // Close ring if needed
-        const first=coords[0][0],last=coords[0][coords[0].length-1];
-        if(first[0]!==last[0]||first[1]!==last[1]) coords[0].push(first);
-        const code=osmTagsToCode(el.tags||{});
-        features.push({
-          type:'Feature',
-          geometry:{type:'Polygon',coordinates:coords},
-          properties:{...el.tags,_code:code,_id:el.id}
-        });
-      } else if(el.type==='relation'&&el.members){
-        // Use outer members
-        for(const m of el.members){
-          if(m.role==='outer'&&m.geometry&&m.geometry.length>3){
-            const ring=m.geometry.map(pt=>[pt.lon,pt.lat]);
-            const first=ring[0],last=ring[ring.length-1];
-            if(first[0]!==last[0]||first[1]!==last[1]) ring.push(first);
-            const code=osmTagsToCode(el.tags||{});
-            features.push({
-              type:'Feature',
-              geometry:{type:'Polygon',coordinates:[ring]},
-              properties:{...el.tags,_code:code,_id:el.id}
-            });
-          }
-        }
-      }
-    }catch(e){}
-  }
-  return features;
-}
-
-// Cache key = "lat_lng" grid cell
-const bboxCache={};
-let fetchController=null;
-
-async function loadForView(){
-  if(!layerVisible) return;
-  const zoom=map.getZoom();
-  document.getElementById('zoom-num').textContent=zoom;
-
-  if(zoom<8){
-    if(geoLayer){map.removeLayer(geoLayer);geoLayer=null;}
-    setStatus(`Zoom <b>${zoom}</b> — zoom to 8+ to see ownership`);
-    return;
-  }
-
-  const b=map.getBounds();
-  const s=b.getSouth().toFixed(3),w=b.getWest().toFixed(3);
-  const n=b.getNorth().toFixed(3),e=b.getEast().toFixed(3);
-  const key=`${s},${w},${n},${e}`;
-
-  if(bboxCache[key]){
-    renderFeatures(bboxCache[key]);
-    setStatus(`Zoom <b>${zoom}</b> — tap any area for details`);
-    return;
-  }
-
-  setStatus(`Loading land data…`);
-
+async function loadPADUS(){
+  setLoadBar(20);
+  setStatus('<b>Loading</b> land ownership data…');
   try{
-    if(fetchController) fetchController.abort();
-    fetchController=new AbortController();
+    const resp = await fetch('./padus.geojson');
+    if(!resp.ok) throw new Error('fetch failed: '+resp.status);
+    setLoadBar(60);
+    const geojson = await resp.json();
+    setLoadBar(85);
 
-    const query=buildOverpassQuery(s,w,n,e);
-    const resp=await fetch('https://overpass-api.de/api/interpreter',{
-      method:'POST',
-      body:'data='+encodeURIComponent(query),
-      signal:fetchController.signal
-    });
-    const data=await resp.json();
-    const features=overpassToGeoJSON(data.elements||[]);
-    bboxCache[key]=features;
-    renderFeatures(features);
-    setStatus(`Zoom <b>${zoom}</b> — ${features.length} areas loaded · tap for details`);
+    geoLayer = L.geoJSON(geojson, {
+      style: function(f){
+        const agency = (f.properties.agency||'OTHF').toUpperCase();
+        const color  = agencyColor(agency);
+        return {
+          fillColor:   color,
+          fillOpacity: currentOpacity,
+          color:       color,
+          weight:      1.5,
+          opacity:     1.0
+        };
+      },
+      onEachFeature: function(f, layer){
+        layer.on('click', function(e){
+          L.DomEvent.stopPropagation(e);
+          const p      = f.properties;
+          const agency = (p.agency||'OTHF').toUpperCase();
+          const label  = LABELS[agency]||agency;
+          const name   = p.name||label;
+          const type   = p.type||'';
+          showInfo(name,
+            `<span style="color:#aaa">${label}</span><br>`+
+            `${type&&type!==name?`${type}<br>`:''}`+
+            `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
+            agencyColor(agency)
+          );
+        });
+      }
+    }).addTo(map);
+
+    setLoadBar(100);
+    setTimeout(()=>setLoadBar(0),500);
+    const count = geojson.features.length;
+    setStatus(`<b>${count}</b> land units loaded · tap any area for details`);
+
   }catch(err){
-    if(err.name==='AbortError') return;
-    setStatus(`Zoom <b>${zoom}</b> — error loading, retrying…`);
-    // Retry once after 2s
-    setTimeout(loadForView, 2000);
+    setLoadBar(0);
+    setStatus('Error loading padus.geojson — make sure file is in your repo');
+    console.error(err);
   }
 }
 
-function renderFeatures(features){
-  if(geoLayer){map.removeLayer(geoLayer);geoLayer=null;}
-  if(!layerVisible||features.length===0) return;
+loadPADUS();
 
-  geoLayer=L.geoJSON({type:'FeatureCollection',features},{
-    style:function(f){
-      const code=f.properties._code||'OTHF';
-      const color=agencyColor(code);
-      return {fillColor:color,fillOpacity:currentOpacity,color:color,weight:1.5,opacity:1.0};
-    },
-    onEachFeature:function(f,layer){
-      layer.on('click',function(e){
-        L.DomEvent.stopPropagation(e);
-        const p=f.properties;
-        const code=p._code||'OTHF';
-        const label=LABELS[code]||code;
-        const name=p.name||label;
-        const op=p.operator||'';
-        showInfo(name,
-          `${op&&op!==name?`<span style="color:#aaa">${op}</span><br>`:''}` +
-          `<span style="color:#aaa">${label}</span><br>` +
-          `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
-          agencyColor(code)
-        );
-      });
-    }
-  }).addTo(map);
-}
+// ── map click — show private if no polygon hit ──
+map.on('click',function(e){
+  showInfo('Private / Unclassified',
+    `No public land at this point.<br>`+
+    `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
+    '#666699');
+});
 
-function scheduleLoad(){clearTimeout(loadTimer);loadTimer=setTimeout(loadForView,700);}
-map.on('moveend',scheduleLoad);
-map.on('zoomend',scheduleLoad);
-loadForView();
+// ── zoom display ──
+map.on('zoomend',function(){
+  const z=map.getZoom();
+  if(geoLayer) setStatus(`Zoom <b>${z}</b> · tap any colored area for details`);
+});
 
 function setBase(type){
   map.removeLayer(currentBase);
@@ -294,10 +180,11 @@ function setBase(type){
 function toggleLayer(){
   const btn=document.getElementById('btn-layer');
   if(layerVisible){
-    if(geoLayer){map.removeLayer(geoLayer);geoLayer=null;}
+    if(geoLayer) map.removeLayer(geoLayer);
     btn.classList.remove('active');layerVisible=false;
   }else{
-    layerVisible=true;btn.classList.add('active');loadForView();
+    if(geoLayer) geoLayer.addTo(map);
+    btn.classList.add('active');layerVisible=true;
   }
 }
 
@@ -327,13 +214,6 @@ map.on('locationerror',function(){
   alert('Location access denied. Please enable location in your browser/phone settings.');
 });
 
-map.on('click',function(e){
-  showInfo('Private / Unclassified',
-    `No public land record at this point.<br>`+
-    `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
-    '#778899');
-});
-
 function showInfo(title,body,borderColor){
   const p=document.getElementById('info-panel');
   document.getElementById('info-title').textContent=title;
@@ -342,6 +222,7 @@ function showInfo(title,body,borderColor){
   p.style.display='block';
 }
 function closeInfo(){document.getElementById('info-panel').style.display='none';}
+function setLoadBar(pct){document.getElementById('loadbar').style.width=pct+'%';}
 function setStatus(html){document.getElementById('statusbar').innerHTML=html;}
 let legendOpen=true;
 function toggleLegend(){
