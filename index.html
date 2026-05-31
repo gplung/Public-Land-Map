@@ -26,7 +26,7 @@
   #header h1 {
     font-family:'Barlow Condensed',sans-serif; font-size:1.15rem;
     font-weight:700; letter-spacing:0.06em; color:var(--accent);
-    text-transform:uppercase; white-space:nowrap; margin-right:2px;
+    text-transform:uppercase; white-space:nowrap;
   }
   #header h1 span { color:var(--text); }
   .build-tag {
@@ -42,9 +42,9 @@
     background:var(--bg); color:var(--text); cursor:pointer;
     transition:background 0.15s,border-color 0.15s; white-space:nowrap;
   }
-  .btn:hover    { background:#21262d; border-color:var(--accent); }
-  .btn.active   { background:var(--accent); color:#000; border-color:var(--accent); }
-  .btn.locate   { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+  .btn:hover  { background:#21262d; border-color:var(--accent); }
+  .btn.active { background:var(--accent); color:#000; border-color:var(--accent); }
+  .btn.locate { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
   .btn.locate:hover { background:#1e40af; }
   #opacity-wrap {
     display:flex; align-items:center; gap:5px; font-size:0.72rem;
@@ -53,24 +53,19 @@
   }
   input[type=range] { width:70px; accent-color:var(--accent); cursor:pointer; }
   #map { flex:1; width:100%; }
-
-  /* loading bar */
   #loadbar {
-    position:absolute; top:0; left:0; width:0%; height:3px;
-    background:var(--accent); z-index:2000;
-    transition:width 0.3s ease;
+    position:absolute; top:0; left:0; width:0%;
+    height:3px; background:var(--accent); z-index:2000; transition:width 0.3s;
   }
-
-  /* status pill */
   #status {
     position:absolute; top:12px; left:50%; transform:translateX(-50%);
     z-index:1500; background:rgba(13,17,23,0.92);
     border:1px solid var(--accent); border-radius:20px;
-    padding:5px 14px; font-family:'Barlow Condensed',sans-serif;
+    padding:5px 16px; font-family:'Barlow Condensed',sans-serif;
     font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase;
     color:var(--accent); display:none; backdrop-filter:blur(6px);
+    white-space:nowrap;
   }
-
   #legend {
     position:absolute; bottom:28px; right:8px; z-index:999;
     background:rgba(13,17,23,0.93); border:1px solid var(--border);
@@ -89,7 +84,6 @@
     width:18px; height:14px; border-radius:2px; flex-shrink:0;
     border:1px solid rgba(255,255,255,0.2);
   }
-
   #info-panel {
     position:absolute; bottom:28px; left:8px; z-index:999;
     background:rgba(13,17,23,0.96); border:1px solid var(--accent);
@@ -107,7 +101,6 @@
     cursor:pointer; color:var(--muted); font-size:0.95rem;
   }
   #info-close:hover { color:var(--text); }
-
   .leaflet-control-attribution {
     background:rgba(13,17,23,0.7)!important;
     color:var(--muted)!important; font-size:0.6rem!important;
@@ -126,13 +119,13 @@
 
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #5</span>
+  <span class="build-tag">Build #6</span>
   <div id="controls">
-    <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
-    <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
-    <button class="btn"        id="btn-street"     onclick="setBase('street')">Street</button>
-    <button class="btn active" id="btn-layer"      onclick="toggleLayer()">Ownership</button>
-    <button class="btn locate" id="locate-btn"     onclick="locateMe()">📍 My Location</button>
+    <button class="btn active" id="btn-topo"       onclick="setBase('topo')">Topo</button>
+    <button class="btn"        id="btn-satellite"   onclick="setBase('satellite')">Satellite</button>
+    <button class="btn"        id="btn-street"      onclick="setBase('street')">Street</button>
+    <button class="btn active" id="btn-layer"       onclick="toggleLayer()">Ownership</button>
+    <button class="btn locate" id="locate-btn"      onclick="locateMe()">📍 My Location</button>
     <div id="opacity-wrap">
       Opacity
       <input type="range" id="opacity-slider" min="10" max="95" value="65"
@@ -144,9 +137,7 @@
 <div id="map"></div>
 
 <div id="legend">
-  <div id="legend-toggle" onclick="toggleLegend()">
-    Legend <span id="legend-arrow">▲</span>
-  </div>
+  <div id="legend-toggle" onclick="toggleLegend()">Legend <span id="legend-arrow">▲</span></div>
   <div id="legend-body">
     <div class="legend-row"><div class="legend-swatch" style="background:#F5C518"></div>BLM</div>
     <div class="legend-row"><div class="legend-swatch" style="background:#1a8c1a"></div>National Forest (USFS)</div>
@@ -168,21 +159,13 @@
 
 <script>
 // ══════════════════════════════════════════
-// AGENCY COLOR + LABEL TABLES
+// AGENCY TABLES
 // ══════════════════════════════════════════
 const COLORS = {
-  'BLM':  '#F5C518',
-  'USFS': '#1a8c1a',
-  'NPS':  '#00aadd',
-  'FWS':  '#66dd00',
-  'DOD':  '#dd1111',
-  'BOR':  '#3377aa',
-  'TRIB': '#aa22ee',
-  'STA':  '#dd4400',
-  'STAT': '#dd4400',
-  'LOC':  '#ff8800',
-  'NGO':  '#ff66aa',
-  'OTHF': '#778899',
+  'BLM':'#F5C518','USFS':'#1a8c1a','NPS':'#00aadd',
+  'FWS':'#66dd00','DOD':'#dd1111','BOR':'#3377aa',
+  'TRIB':'#aa22ee','STA':'#dd4400','STAT':'#dd4400',
+  'LOC':'#ff8800','NGO':'#ff66aa','OTHF':'#778899'
 };
 const LABELS = {
   'BLM':'Bureau of Land Management','USFS':'US Forest Service',
@@ -192,10 +175,7 @@ const LABELS = {
   'LOC':'Local Government','NGO':'Non-Governmental Org',
   'OTHF':'Other Federal','PVT':'Private Land'
 };
-
-function agencyColor(code) {
-  return COLORS[(code||'').toUpperCase()] || '#778899';
-}
+function agencyColor(code){ return COLORS[(code||'OTHF').toUpperCase()] || '#778899'; }
 
 // ══════════════════════════════════════════
 // BASE LAYERS
@@ -211,119 +191,115 @@ const streetLayer = L.tileLayer(
   {attribution:'© OpenStreetMap',maxZoom:19,zIndex:1});
 
 // ══════════════════════════════════════════
-// MAP
+// MAP INIT
 // ══════════════════════════════════════════
 const map = L.map('map',{center:[39.5,-98.35],zoom:5,layers:[topoLayer]});
 let currentBase = topoLayer;
 
-// GeoJSON layer group — we draw our OWN filled polygons
-const ownershipGroup = L.layerGroup().addTo(map);
+// Single GeoJSON layer — replaced on each load
+let geoLayer = null;
 let layerVisible = true;
 let currentOpacity = 0.65;
-let currentZoom = map.getZoom();
 let loadTimer = null;
 
 // ══════════════════════════════════════════
-// FETCH + DRAW OWNERSHIP POLYGONS
-// Uses BLM ArcGIS REST FeatureServer — returns
-// real GeoJSON we style ourselves with solid fills
+// STYLE FUNCTION — called per feature
+// Returns SOLID fill with our colors
+// ══════════════════════════════════════════
+function featureStyle(feature) {
+  const props = feature.properties || {};
+  const code  = (props.ADMIN_AGENCY_CODE || props.MGMT_AGENCY_CODE || 'OTHF').toUpperCase();
+  const color = agencyColor(code);
+  return {
+    fillColor:   color,
+    fillOpacity: currentOpacity,   // solid fill
+    color:       '#000',           // dark border for contrast
+    weight:      0.8,
+    opacity:     1
+  };
+}
+
+// ══════════════════════════════════════════
+// LOAD OWNERSHIP FROM BLM GEOJSON API
 // ══════════════════════════════════════════
 async function loadOwnership() {
   if (!layerVisible) return;
-
   const zoom = map.getZoom();
-  // Only load at zoom 7+ to avoid fetching too much data
+
   if (zoom < 7) {
-    ownershipGroup.clearLayers();
-    showStatus('Zoom in to see land ownership boundaries');
+    if (geoLayer) { map.removeLayer(geoLayer); geoLayer = null; }
+    showStatus('Zoom in to level 7+ to see land ownership');
     return;
   }
-
   hideStatus();
-  setLoadBar(10);
+  setLoadBar(15);
 
-  const bounds = map.getBounds();
-  const xmin = bounds.getWest().toFixed(6);
-  const ymin = bounds.getSouth().toFixed(6);
-  const xmax = bounds.getEast().toFixed(6);
-  const ymax = bounds.getNorth().toFixed(6);
-  const bbox = `${xmin},${ymin},${xmax},${ymax}`;
-
-  // Limit features per request to keep it fast
-  const maxRec = zoom >= 10 ? 500 : 200;
-
-  setLoadBar(30);
+  const b    = map.getBounds();
+  const bbox = `${b.getWest().toFixed(5)},${b.getSouth().toFixed(5)},${b.getEast().toFixed(5)},${b.getNorth().toFixed(5)}`;
+  const maxR = zoom >= 11 ? 600 : zoom >= 9 ? 350 : 200;
 
   try {
     const url =
       `https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/1/query?` +
-      `geometry=${bbox}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects` +
+      `geometry=${bbox}&geometryType=esriGeometryEnvelope&inSR=4326` +
+      `&spatialRel=esriSpatialRelIntersects` +
       `&outFields=ADMIN_AGENCY_CODE,ADMIN_UNIT_NAME,MGMT_AGENCY_CODE,GIS_ACRES,STATE_GEOG` +
-      `&returnGeometry=true&outSR=4326&resultRecordCount=${maxRec}&f=geojson`;
+      `&returnGeometry=true&outSR=4326&resultRecordCount=${maxR}&f=geojson`;
 
+    setLoadBar(40);
     const resp = await fetch(url);
+    if (!resp.ok) throw new Error('fetch failed');
     const geojson = await resp.json();
+    setLoadBar(75);
 
-    setLoadBar(80);
-    ownershipGroup.clearLayers();
+    // Remove old layer
+    if (geoLayer) { map.removeLayer(geoLayer); geoLayer = null; }
 
-    if (geojson.features && geojson.features.length > 0) {
-      L.geoJSON(geojson, {
-        style: function(feature) {
-          const code = (
-            feature.properties.ADMIN_AGENCY_CODE ||
-            feature.properties.MGMT_AGENCY_CODE  || 'OTHF'
-          ).toUpperCase();
-          const color = agencyColor(code);
-          return {
-            fillColor:   color,
-            fillOpacity: currentOpacity,
-            color:       color,
-            weight:      1.2,
-            opacity:     0.9
-          };
-        },
-        onEachFeature: function(feature, layer) {
-          layer.on('click', function(e) {
-            L.DomEvent.stopPropagation(e);
-            const p     = feature.properties;
-            const code  = (p.ADMIN_AGENCY_CODE || p.MGMT_AGENCY_CODE || 'OTHF').toUpperCase();
-            const label = LABELS[code] || code;
-            const name  = p.ADMIN_UNIT_NAME || '';
-            const acres = p.GIS_ACRES ? Math.round(p.GIS_ACRES).toLocaleString() + ' acres' : '';
-            const state = p.STATE_GEOG || '';
-            const color = agencyColor(code);
-            showInfo(label,
-              `${name  ? `<span style="color:#ccc">${name}</span><br>` : ''}` +
-              `${state ? `State: ${state}<br>` : ''}` +
-              `${acres ? `${acres}<br>` : ''}` +
-              `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
-              color
-            );
-          });
-        }
-      }).addTo(ownershipGroup);
+    if (!geojson.features || geojson.features.length === 0) {
+      setLoadBar(100); setTimeout(()=>setLoadBar(0),400);
+      return;
     }
+
+    // Create new GeoJSON layer with solid fills
+    geoLayer = L.geoJSON(geojson, {
+      style: featureStyle,
+      onEachFeature: function(feature, layer) {
+        layer.on('click', function(e) {
+          L.DomEvent.stopPropagation(e);
+          const p     = feature.properties || {};
+          const code  = (p.ADMIN_AGENCY_CODE || p.MGMT_AGENCY_CODE || 'OTHF').toUpperCase();
+          const label = LABELS[code] || code;
+          const name  = p.ADMIN_UNIT_NAME || '';
+          const acres = p.GIS_ACRES ? Math.round(p.GIS_ACRES).toLocaleString() + ' acres' : '';
+          const state = p.STATE_GEOG || '';
+          showInfo(label,
+            `${name  ? `<span style="color:#ccc">${name}</span><br>` : ''}` +
+            `${state ? `State: ${state}<br>` : ''}` +
+            `${acres ? `${acres}<br>` : ''}` +
+            `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
+            agencyColor(code)
+          );
+        });
+      }
+    }).addTo(map);
+
     setLoadBar(100);
-    setTimeout(()=>setLoadBar(0), 500);
+    setTimeout(()=>setLoadBar(0), 400);
 
   } catch(err) {
     setLoadBar(0);
-    showStatus('Could not load ownership data — check connection');
+    showStatus('Could not load data — check connection');
     setTimeout(hideStatus, 3000);
   }
 }
 
-// Debounce so we don't hammer the API on every pan pixel
 function scheduleLoad() {
   clearTimeout(loadTimer);
-  loadTimer = setTimeout(loadOwnership, 600);
+  loadTimer = setTimeout(loadOwnership, 700);
 }
 
 map.on('moveend', scheduleLoad);
 map.on('zoomend', scheduleLoad);
-
-// Initial load
 loadOwnership();
 
 // ══════════════════════════════════════════
@@ -333,20 +309,21 @@ function setBase(type) {
   map.removeLayer(currentBase);
   ['btn-topo','btn-satellite','btn-street'].forEach(id =>
     document.getElementById(id).classList.remove('active'));
-  if (type==='topo')      { currentBase=topoLayer;      document.getElementById('btn-topo').classList.add('active'); }
+  if (type==='topo')       { currentBase=topoLayer;      document.getElementById('btn-topo').classList.add('active'); }
   else if(type==='satellite'){ currentBase=satelliteLayer; document.getElementById('btn-satellite').classList.add('active'); }
-  else                    { currentBase=streetLayer;    document.getElementById('btn-street').classList.add('active'); }
+  else                     { currentBase=streetLayer;    document.getElementById('btn-street').classList.add('active'); }
   currentBase.addTo(map);
   currentBase.bringToBack();
+  if (geoLayer) geoLayer.bringToFront();
 }
 
 // ══════════════════════════════════════════
-// TOGGLE OWNERSHIP
+// TOGGLE
 // ══════════════════════════════════════════
 function toggleLayer() {
   const btn = document.getElementById('btn-layer');
   if (layerVisible) {
-    ownershipGroup.clearLayers();
+    if (geoLayer) { map.removeLayer(geoLayer); geoLayer = null; }
     btn.classList.remove('active');
     layerVisible = false;
   } else {
@@ -357,47 +334,38 @@ function toggleLayer() {
 }
 
 // ══════════════════════════════════════════
-// OPACITY — directly updates drawn polygons
+// OPACITY — updates existing layer instantly
 // ══════════════════════════════════════════
 function updateOpacity(val) {
   currentOpacity = val / 100;
-  ownershipGroup.eachLayer(function(layer) {
-    if (layer.setStyle) layer.setStyle({ fillOpacity: currentOpacity });
-    // handle layer groups inside
-    if (layer.eachLayer) layer.eachLayer(function(sub) {
-      if (sub.setStyle) sub.setStyle({ fillOpacity: currentOpacity });
-    });
-  });
+  if (geoLayer) {
+    geoLayer.setStyle({ fillOpacity: currentOpacity });
+  }
 }
 
 // ══════════════════════════════════════════
 // MY LOCATION
 // ══════════════════════════════════════════
 let locationMarker = null, locationCircle = null;
-
 function locateMe() {
   const btn = document.getElementById('locate-btn');
   btn.textContent = '⏳ Locating…';
   btn.disabled = true;
   map.locate({setView:true, maxZoom:13});
 }
-
 map.on('locationfound', function(e) {
   const btn = document.getElementById('locate-btn');
   btn.textContent = '📍 My Location';
   btn.disabled = false;
   if (locationMarker) { map.removeLayer(locationMarker); map.removeLayer(locationCircle); }
   locationCircle = L.circle(e.latlng,{
-    radius:e.accuracy, color:'#3b82f6', fillColor:'#3b82f6',
-    fillOpacity:0.12, weight:1
+    radius:e.accuracy, color:'#3b82f6', fillColor:'#3b82f6', fillOpacity:0.12, weight:1
   }).addTo(map);
   locationMarker = L.circleMarker(e.latlng,{
-    radius:10, color:'#fff', weight:2.5,
-    fillColor:'#3b82f6', fillOpacity:1
+    radius:10, color:'#fff', weight:2.5, fillColor:'#3b82f6', fillOpacity:1
   }).addTo(map);
   locationMarker.bindPopup('<b>You are here</b>Tap a colored area to see ownership').openPopup();
 });
-
 map.on('locationerror', function() {
   const btn = document.getElementById('locate-btn');
   btn.textContent = '📍 My Location';
@@ -406,12 +374,10 @@ map.on('locationerror', function() {
 });
 
 // ══════════════════════════════════════════
-// MAP CLICK — fallback identify for areas
-// not covered by drawn polygons
+// MAP CLICK — fallback for uncolored areas
 // ══════════════════════════════════════════
 map.on('click', async function(e) {
   const {lat,lng} = e.latlng;
-  // Only query if no polygon was clicked
   showInfo('Looking up…','Fetching ownership data…','#f0a500');
   try {
     const url =
@@ -453,28 +419,21 @@ function showInfo(title, body, borderColor) {
   const panel = document.getElementById('info-panel');
   document.getElementById('info-title').textContent = title;
   document.getElementById('info-body').innerHTML    = body;
-  panel.style.borderColor = borderColor||'var(--accent)';
+  panel.style.borderColor = borderColor || 'var(--accent)';
   panel.style.display = 'block';
 }
 function closeInfo() { document.getElementById('info-panel').style.display='none'; }
-
-function setLoadBar(pct) {
-  document.getElementById('loadbar').style.width = pct+'%';
-}
+function setLoadBar(pct) { document.getElementById('loadbar').style.width=pct+'%'; }
 function showStatus(msg) {
-  const s = document.getElementById('status');
-  s.textContent = msg;
-  s.style.display = 'block';
+  const s=document.getElementById('status');
+  s.textContent=msg; s.style.display='block';
 }
-function hideStatus() {
-  document.getElementById('status').style.display = 'none';
-}
-
-let legendOpen = true;
+function hideStatus() { document.getElementById('status').style.display='none'; }
+let legendOpen=true;
 function toggleLegend() {
-  legendOpen = !legendOpen;
-  document.getElementById('legend-body').style.display = legendOpen ? 'flex' : 'none';
-  document.getElementById('legend-arrow').textContent  = legendOpen ? '▲' : '▼';
+  legendOpen=!legendOpen;
+  document.getElementById('legend-body').style.display=legendOpen?'flex':'none';
+  document.getElementById('legend-arrow').textContent=legendOpen?'▲':'▼';
 }
 </script>
 </body>
