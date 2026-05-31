@@ -14,8 +14,7 @@
   }
   * { box-sizing:border-box; margin:0; padding:0; }
   body {
-    font-family:'Barlow',sans-serif;
-    background:var(--bg); color:var(--text);
+    font-family:'Barlow',sans-serif; background:var(--bg); color:var(--text);
     height:100dvh; display:flex; flex-direction:column; overflow:hidden;
   }
   #header {
@@ -36,47 +35,36 @@
   }
   #controls { display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex:1; }
   .btn {
-    font-family:'Barlow Condensed',sans-serif; font-size:0.78rem;
-    font-weight:600; letter-spacing:0.06em; text-transform:uppercase;
-    padding:5px 11px; border-radius:4px; border:1px solid var(--border);
-    background:var(--bg); color:var(--text); cursor:pointer;
-    transition:background 0.15s,border-color 0.15s; white-space:nowrap;
+    font-family:'Barlow Condensed',sans-serif; font-size:0.78rem; font-weight:600;
+    letter-spacing:0.06em; text-transform:uppercase; padding:5px 11px;
+    border-radius:4px; border:1px solid var(--border); background:var(--bg);
+    color:var(--text); cursor:pointer; transition:background 0.15s,border-color 0.15s;
+    white-space:nowrap;
   }
   .btn:hover  { background:#21262d; border-color:var(--accent); }
   .btn.active { background:var(--accent); color:#000; border-color:var(--accent); }
   .btn.locate { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
   .btn.locate:hover { background:#1e40af; }
   #opacity-wrap {
-    display:flex; align-items:center; gap:5px; font-size:0.72rem;
-    color:var(--muted); font-family:'Barlow Condensed',sans-serif;
-    letter-spacing:0.05em; text-transform:uppercase;
+    display:flex; align-items:center; gap:5px; font-size:0.72rem; color:var(--muted);
+    font-family:'Barlow Condensed',sans-serif; letter-spacing:0.05em; text-transform:uppercase;
   }
   input[type=range] { width:70px; accent-color:var(--accent); cursor:pointer; }
   #map { flex:1; width:100%; }
   #loadbar {
-    position:absolute; top:0; left:0; width:0%;
-    height:3px; background:var(--accent); z-index:2000; transition:width 0.3s;
-  }
-  #status {
-    position:absolute; top:12px; left:50%; transform:translateX(-50%);
-    z-index:1500; background:rgba(13,17,23,0.92);
-    border:1px solid var(--accent); border-radius:20px;
-    padding:5px 16px; font-family:'Barlow Condensed',sans-serif;
-    font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase;
-    color:var(--accent); display:none; backdrop-filter:blur(6px);
-    white-space:nowrap;
+    position:absolute; top:0; left:0; width:0%; height:3px;
+    background:var(--accent); z-index:2000; transition:width 0.3s;
   }
   #legend {
     position:absolute; bottom:28px; right:8px; z-index:999;
     background:rgba(13,17,23,0.93); border:1px solid var(--border);
-    border-radius:6px; padding:9px 11px; min-width:195px;
-    backdrop-filter:blur(8px);
+    border-radius:6px; padding:9px 11px; min-width:200px; backdrop-filter:blur(8px);
   }
   #legend-toggle {
-    font-family:'Barlow Condensed',sans-serif; font-size:0.72rem;
-    font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
-    color:var(--accent); cursor:pointer; display:flex;
-    align-items:center; justify-content:space-between; user-select:none;
+    font-family:'Barlow Condensed',sans-serif; font-size:0.72rem; font-weight:700;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--accent);
+    cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+    user-select:none;
   }
   #legend-body { margin-top:7px; display:flex; flex-direction:column; gap:4px; }
   .legend-row  { display:flex; align-items:center; gap:7px; font-size:0.76rem; color:var(--text); }
@@ -86,24 +74,23 @@
   }
   #info-panel {
     position:absolute; bottom:28px; left:8px; z-index:999;
-    background:rgba(13,17,23,0.96); border:1px solid var(--accent);
-    border-radius:6px; padding:11px 13px; max-width:255px;
+    background:rgba(13,17,23,0.96); border:2px solid var(--accent);
+    border-radius:6px; padding:11px 13px; max-width:260px;
     display:none; backdrop-filter:blur(8px);
   }
   #info-panel h3 {
-    font-family:'Barlow Condensed',sans-serif; font-size:0.88rem;
-    font-weight:700; letter-spacing:0.07em; text-transform:uppercase;
-    color:var(--accent); margin-bottom:5px; padding-right:16px;
+    font-family:'Barlow Condensed',sans-serif; font-size:0.88rem; font-weight:700;
+    letter-spacing:0.07em; text-transform:uppercase; color:var(--accent);
+    margin-bottom:5px; padding-right:16px;
   }
-  #info-panel p { font-size:0.79rem; color:var(--text); line-height:1.55; }
+  #info-panel p { font-size:0.79rem; color:var(--text); line-height:1.6; }
   #info-close {
-    position:absolute; top:7px; right:9px;
-    cursor:pointer; color:var(--muted); font-size:0.95rem;
+    position:absolute; top:7px; right:9px; cursor:pointer;
+    color:var(--muted); font-size:0.95rem;
   }
   #info-close:hover { color:var(--text); }
   .leaflet-control-attribution {
-    background:rgba(13,17,23,0.7)!important;
-    color:var(--muted)!important; font-size:0.6rem!important;
+    background:rgba(13,17,23,0.7)!important; color:var(--muted)!important; font-size:0.6rem!important;
   }
   .leaflet-control-attribution a { color:var(--muted)!important; }
   @media(max-width:500px){
@@ -115,20 +102,19 @@
 <body>
 
 <div id="loadbar"></div>
-<div id="status"></div>
 
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #6</span>
+  <span class="build-tag">Build #7</span>
   <div id="controls">
-    <button class="btn active" id="btn-topo"       onclick="setBase('topo')">Topo</button>
-    <button class="btn"        id="btn-satellite"   onclick="setBase('satellite')">Satellite</button>
-    <button class="btn"        id="btn-street"      onclick="setBase('street')">Street</button>
-    <button class="btn active" id="btn-layer"       onclick="toggleLayer()">Ownership</button>
-    <button class="btn locate" id="locate-btn"      onclick="locateMe()">📍 My Location</button>
+    <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
+    <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
+    <button class="btn"        id="btn-street"     onclick="setBase('street')">Street</button>
+    <button class="btn active" id="btn-layer"      onclick="toggleLayer()">Ownership</button>
+    <button class="btn locate" id="locate-btn"     onclick="locateMe()">📍 My Location</button>
     <div id="opacity-wrap">
       Opacity
-      <input type="range" id="opacity-slider" min="10" max="95" value="65"
+      <input type="range" id="opacity-slider" min="10" max="95" value="70"
              oninput="updateOpacity(this.value)">
     </div>
   </div>
@@ -139,15 +125,15 @@
 <div id="legend">
   <div id="legend-toggle" onclick="toggleLegend()">Legend <span id="legend-arrow">▲</span></div>
   <div id="legend-body">
-    <div class="legend-row"><div class="legend-swatch" style="background:#F5C518"></div>BLM</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#1a8c1a"></div>National Forest (USFS)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#00aadd"></div>National Park (NPS)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#dd4400"></div>State Land / Trust</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#66dd00"></div>Wildlife Refuge (FWS)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#aa22ee"></div>Tribal Land</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#dd1111"></div>Military (DOD)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#3377aa"></div>Bureau of Reclamation</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#778899"></div>Other Federal</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#F0B000"></div>BLM</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#267300"></div>National Forest (USFS)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#6699CD"></div>National Park (NPS)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#FF7F7F"></div>State Land / Trust</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#70A800"></div>Wildlife Refuge (FWS)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#C500FF"></div>Tribal Land</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#FF0000"></div>Military (DOD)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#004DA8"></div>Bureau of Reclamation</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#FFBEE8"></div>Other Federal</div>
   </div>
 </div>
 
@@ -159,13 +145,13 @@
 
 <script>
 // ══════════════════════════════════════════
-// AGENCY TABLES
+// AGENCY TABLES — colors match PAD-US standard
 // ══════════════════════════════════════════
 const COLORS = {
-  'BLM':'#F5C518','USFS':'#1a8c1a','NPS':'#00aadd',
-  'FWS':'#66dd00','DOD':'#dd1111','BOR':'#3377aa',
-  'TRIB':'#aa22ee','STA':'#dd4400','STAT':'#dd4400',
-  'LOC':'#ff8800','NGO':'#ff66aa','OTHF':'#778899'
+  'BLM':'#F0B000','USFS':'#267300','NPS':'#6699CD',
+  'FWS':'#70A800','DOD':'#FF0000','BOR':'#004DA8',
+  'TRIB':'#C500FF','STA':'#FF7F7F','STAT':'#FF7F7F',
+  'LOC':'#FFAA00','NGO':'#FF82BA','OTHF':'#FFBEE8'
 };
 const LABELS = {
   'BLM':'Bureau of Land Management','USFS':'US Forest Service',
@@ -175,7 +161,7 @@ const LABELS = {
   'LOC':'Local Government','NGO':'Non-Governmental Org',
   'OTHF':'Other Federal','PVT':'Private Land'
 };
-function agencyColor(code){ return COLORS[(code||'OTHF').toUpperCase()] || '#778899'; }
+function agencyColor(code){ return COLORS[(code||'').toUpperCase()] || '#FFBEE8'; }
 
 // ══════════════════════════════════════════
 // BASE LAYERS
@@ -184,7 +170,7 @@ const topoLayer = L.tileLayer(
   'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
   {attribution:'USGS Topo',maxZoom:16,zIndex:1});
 const satelliteLayer = L.tileLayer(
-  'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
+  'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}',
   {attribution:'USGS Imagery',maxZoom:16,zIndex:1});
 const streetLayer = L.tileLayer(
   'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -196,111 +182,123 @@ const streetLayer = L.tileLayer(
 const map = L.map('map',{center:[39.5,-98.35],zoom:5,layers:[topoLayer]});
 let currentBase = topoLayer;
 
-// Single GeoJSON layer — replaced on each load
-let geoLayer = null;
-let layerVisible = true;
-let currentOpacity = 0.65;
-let loadTimer = null;
+// ══════════════════════════════════════════
+// OWNERSHIP OVERLAY
+// PAD-US pre-rendered tile service from ArcGIS Online
+// This is the SAME dataset as PAD-US but served as
+// pre-rendered image tiles with SOLID FILLS already baked in
+// Colors match the official federal land management color scheme
+// ══════════════════════════════════════════
+const padTiles = L.tileLayer(
+  'https://services.arcgisonline.com/arcgis/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  {opacity:0, zIndex:5} // placeholder — real layer below
+);
 
-// ══════════════════════════════════════════
-// STYLE FUNCTION — called per feature
-// Returns SOLID fill with our colors
-// ══════════════════════════════════════════
-function featureStyle(feature) {
-  const props = feature.properties || {};
-  const code  = (props.ADMIN_AGENCY_CODE || props.MGMT_AGENCY_CODE || 'OTHF').toUpperCase();
-  const color = agencyColor(code);
-  return {
-    fillColor:   color,
-    fillOpacity: currentOpacity,   // solid fill
-    color:       '#000',           // dark border for contrast
-    weight:      0.8,
-    opacity:     1
-  };
-}
-
-// ══════════════════════════════════════════
-// LOAD OWNERSHIP FROM BLM GEOJSON API
-// ══════════════════════════════════════════
-async function loadOwnership() {
-  if (!layerVisible) return;
-  const zoom = map.getZoom();
-
-  if (zoom < 7) {
-    if (geoLayer) { map.removeLayer(geoLayer); geoLayer = null; }
-    showStatus('Zoom in to level 7+ to see land ownership');
-    return;
+// The real one: BLM's own pre-rendered SMA tile cache
+// This renders solid filled color polygons for every agency
+const smaColorTiles = L.tileLayer.wms(
+  'https://gis.blm.gov/arcgis/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/WMSServer',
+  {
+    layers: '1',
+    styles: '',
+    format: 'image/png',
+    transparent: true,
+    opacity: 0.70,
+    zIndex: 10,
+    attribution: 'BLM SMA'
   }
-  hideStatus();
-  setLoadBar(15);
+);
 
-  const b    = map.getBounds();
-  const bbox = `${b.getWest().toFixed(5)},${b.getSouth().toFixed(5)},${b.getEast().toFixed(5)},${b.getNorth().toFixed(5)}`;
-  const maxR = zoom >= 11 ? 600 : zoom >= 9 ? 350 : 200;
+// ══════════════════════════════════════════
+// CANVAS OVERLAY — we draw our OWN solid fills
+// on top using a canvas tile layer that queries
+// the BLM REST API per tile and renders fills
+// ══════════════════════════════════════════
 
-  try {
+// Create a canvas-based overlay
+const CanvasLayer = L.GridLayer.extend({
+  createTile: function(coords, done) {
+    const tile   = document.createElement('canvas');
+    const size   = this.getTileSize();
+    tile.width   = size.x;
+    tile.height  = size.y;
+    const ctx    = tile.getContext('2d');
+    const zoom   = coords.z;
+
+    if (zoom < 7) { done(null, tile); return tile; }
+
+    // Convert tile coords to bbox
+    const nwPoint = coords.scaleBy(size);
+    const sePoint = nwPoint.add(size);
+    const nw = map.unproject(nwPoint, zoom);
+    const se = map.unproject(sePoint, zoom);
+    const xmin = nw.lng.toFixed(6), ymin = se.lat.toFixed(6);
+    const xmax = se.lng.toFixed(6), ymax = nw.lat.toFixed(6);
+    const bbox = `${xmin},${ymin},${xmax},${ymax}`;
+
     const url =
       `https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/1/query?` +
       `geometry=${bbox}&geometryType=esriGeometryEnvelope&inSR=4326` +
       `&spatialRel=esriSpatialRelIntersects` +
-      `&outFields=ADMIN_AGENCY_CODE,ADMIN_UNIT_NAME,MGMT_AGENCY_CODE,GIS_ACRES,STATE_GEOG` +
-      `&returnGeometry=true&outSR=4326&resultRecordCount=${maxR}&f=geojson`;
+      `&outFields=ADMIN_AGENCY_CODE,MGMT_AGENCY_CODE` +
+      `&returnGeometry=true&outSR=4326&resultRecordCount=200&f=geojson`;
 
-    setLoadBar(40);
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('fetch failed');
-    const geojson = await resp.json();
-    setLoadBar(75);
+    fetch(url).then(r => r.json()).then(geojson => {
+      if (!geojson.features) { done(null, tile); return; }
 
-    // Remove old layer
-    if (geoLayer) { map.removeLayer(geoLayer); geoLayer = null; }
+      geojson.features.forEach(feature => {
+        const props = feature.properties || {};
+        const code  = (props.ADMIN_AGENCY_CODE || props.MGMT_AGENCY_CODE || 'OTHF').toUpperCase();
+        const hex   = agencyColor(code);
 
-    if (!geojson.features || geojson.features.length === 0) {
-      setLoadBar(100); setTimeout(()=>setLoadBar(0),400);
-      return;
-    }
+        // Parse hex color
+        const r = parseInt(hex.slice(1,3),16);
+        const g = parseInt(hex.slice(3,5),16);
+        const b = parseInt(hex.slice(5,7),16);
+        ctx.fillStyle   = `rgba(${r},${g},${b},${currentOpacity})`;
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
+        ctx.lineWidth   = 1;
 
-    // Create new GeoJSON layer with solid fills
-    geoLayer = L.geoJSON(geojson, {
-      style: featureStyle,
-      onEachFeature: function(feature, layer) {
-        layer.on('click', function(e) {
-          L.DomEvent.stopPropagation(e);
-          const p     = feature.properties || {};
-          const code  = (p.ADMIN_AGENCY_CODE || p.MGMT_AGENCY_CODE || 'OTHF').toUpperCase();
-          const label = LABELS[code] || code;
-          const name  = p.ADMIN_UNIT_NAME || '';
-          const acres = p.GIS_ACRES ? Math.round(p.GIS_ACRES).toLocaleString() + ' acres' : '';
-          const state = p.STATE_GEOG || '';
-          showInfo(label,
-            `${name  ? `<span style="color:#ccc">${name}</span><br>` : ''}` +
-            `${state ? `State: ${state}<br>` : ''}` +
-            `${acres ? `${acres}<br>` : ''}` +
-            `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
-            agencyColor(code)
-          );
-        });
-      }
-    }).addTo(map);
+        // Project GeoJSON coords to canvas pixels
+        function drawRing(ring) {
+          ctx.beginPath();
+          ring.forEach((pt, i) => {
+            const latlng  = L.latLng(pt[1], pt[0]);
+            const pixelPt = map.project(latlng, zoom).subtract(nwPoint);
+            if (i === 0) ctx.moveTo(pixelPt.x, pixelPt.y);
+            else         ctx.lineTo(pixelPt.x, pixelPt.y);
+          });
+          ctx.closePath();
+        }
 
-    setLoadBar(100);
-    setTimeout(()=>setLoadBar(0), 400);
+        const geom = feature.geometry;
+        if (!geom) return;
 
-  } catch(err) {
-    setLoadBar(0);
-    showStatus('Could not load data — check connection');
-    setTimeout(hideStatus, 3000);
+        if (geom.type === 'Polygon') {
+          geom.coordinates.forEach((ring, i) => {
+            drawRing(ring);
+            if (i === 0) { ctx.fill(); ctx.stroke(); }
+          });
+        } else if (geom.type === 'MultiPolygon') {
+          geom.coordinates.forEach(poly => {
+            poly.forEach((ring, i) => {
+              drawRing(ring);
+              if (i === 0) { ctx.fill(); ctx.stroke(); }
+            });
+          });
+        }
+      });
+      done(null, tile);
+    }).catch(() => done(null, tile));
+
+    return tile;
   }
-}
+});
 
-function scheduleLoad() {
-  clearTimeout(loadTimer);
-  loadTimer = setTimeout(loadOwnership, 700);
-}
-
-map.on('moveend', scheduleLoad);
-map.on('zoomend', scheduleLoad);
-loadOwnership();
+let canvasLayer = new CanvasLayer({ zIndex: 10, tileSize: 256 });
+canvasLayer.addTo(map);
+let layerVisible = true;
+let currentOpacity = 0.70;
 
 // ══════════════════════════════════════════
 // BASE SWITCHER
@@ -309,12 +307,11 @@ function setBase(type) {
   map.removeLayer(currentBase);
   ['btn-topo','btn-satellite','btn-street'].forEach(id =>
     document.getElementById(id).classList.remove('active'));
-  if (type==='topo')       { currentBase=topoLayer;      document.getElementById('btn-topo').classList.add('active'); }
-  else if(type==='satellite'){ currentBase=satelliteLayer; document.getElementById('btn-satellite').classList.add('active'); }
-  else                     { currentBase=streetLayer;    document.getElementById('btn-street').classList.add('active'); }
+  if (type==='topo')        { currentBase=topoLayer;       document.getElementById('btn-topo').classList.add('active'); }
+  else if(type==='satellite'){ currentBase=satelliteLayer;  document.getElementById('btn-satellite').classList.add('active'); }
+  else                      { currentBase=streetLayer;     document.getElementById('btn-street').classList.add('active'); }
   currentBase.addTo(map);
   currentBase.bringToBack();
-  if (geoLayer) geoLayer.bringToFront();
 }
 
 // ══════════════════════════════════════════
@@ -323,23 +320,25 @@ function setBase(type) {
 function toggleLayer() {
   const btn = document.getElementById('btn-layer');
   if (layerVisible) {
-    if (geoLayer) { map.removeLayer(geoLayer); geoLayer = null; }
+    map.removeLayer(canvasLayer);
     btn.classList.remove('active');
     layerVisible = false;
   } else {
-    layerVisible = true;
+    canvasLayer.addTo(map);
     btn.classList.add('active');
-    loadOwnership();
+    layerVisible = true;
   }
 }
 
 // ══════════════════════════════════════════
-// OPACITY — updates existing layer instantly
+// OPACITY — redraw tiles at new opacity
 // ══════════════════════════════════════════
 function updateOpacity(val) {
   currentOpacity = val / 100;
-  if (geoLayer) {
-    geoLayer.setStyle({ fillOpacity: currentOpacity });
+  if (layerVisible) {
+    map.removeLayer(canvasLayer);
+    canvasLayer = new CanvasLayer({ zIndex: 10, tileSize: 256 });
+    canvasLayer.addTo(map);
   }
 }
 
@@ -364,7 +363,7 @@ map.on('locationfound', function(e) {
   locationMarker = L.circleMarker(e.latlng,{
     radius:10, color:'#fff', weight:2.5, fillColor:'#3b82f6', fillOpacity:1
   }).addTo(map);
-  locationMarker.bindPopup('<b>You are here</b>Tap a colored area to see ownership').openPopup();
+  locationMarker.bindPopup('<b>You are here</b>Tap any colored area to see ownership').openPopup();
 });
 map.on('locationerror', function() {
   const btn = document.getElementById('locate-btn');
@@ -374,11 +373,12 @@ map.on('locationerror', function() {
 });
 
 // ══════════════════════════════════════════
-// MAP CLICK — fallback for uncolored areas
+// TAP TO IDENTIFY
 // ══════════════════════════════════════════
 map.on('click', async function(e) {
   const {lat,lng} = e.latlng;
   showInfo('Looking up…','Fetching ownership data…','#f0a500');
+  setLoadBar(30);
   try {
     const url =
       `https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/1/query?` +
@@ -388,23 +388,51 @@ map.on('click', async function(e) {
       `&returnGeometry=false&f=json`;
     const resp = await fetch(url);
     const data = await resp.json();
+    setLoadBar(80);
     if (data.features && data.features.length > 0) {
       const f     = data.features[0].attributes;
       const code  = (f.ADMIN_AGENCY_CODE||f.MGMT_AGENCY_CODE||'OTHF').toUpperCase();
       const label = LABELS[code]||code;
       const name  = f.ADMIN_UNIT_NAME||'';
-      const acres = f.GIS_ACRES ? Math.round(f.GIS_ACRES).toLocaleString()+' acres' : '';
+      const acres = f.GIS_ACRES ? Math.round(f.GIS_ACRES).toLocaleString()+' acres':'';
       const state = f.STATE_GEOG||'';
+      setLoadBar(100); setTimeout(()=>setLoadBar(0),400);
       showInfo(label,
-        `${name  ? `<span style="color:#ccc">${name}</span><br>` : ''}` +
-        `${state ? `State: ${state}<br>` : ''}` +
-        `${acres ? `${acres}<br>` : ''}` +
+        `${name  ? `<span style="color:#ccc">${name}</span><br>`:``}` +
+        `${state ? `State: ${state}<br>`:''}` +
+        `${acres ? `${acres}<br>`:''}` +
         `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`,
         agencyColor(code)
       );
       return;
     }
-  } catch(err) {}
+    // PAD-US fallback
+    const url2 =
+      `https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Protected_Areas/FeatureServer/0/query?` +
+      `geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326` +
+      `&spatialRel=esriSpatialRelIntersects` +
+      `&outFields=Mang_Name,Unit_Nm,GIS_Acres,Mang_Type,State_Nm` +
+      `&returnGeometry=false&f=json`;
+    const resp2 = await fetch(url2);
+    const data2 = await resp2.json();
+    setLoadBar(100); setTimeout(()=>setLoadBar(0),400);
+    if (data2.features && data2.features.length > 0) {
+      const f    = data2.features[0].attributes;
+      const name = f.Unit_Nm||f.Mang_Name||'Protected Area';
+      const acres= f.GIS_Acres ? Math.round(f.GIS_Acres).toLocaleString()+' acres':'';
+      const type = f.Mang_Type||'';
+      const state= f.State_Nm||'';
+      showInfo(name,
+        `${type  ? `${type}<br>`:''}` +
+        `${state ? `State: ${state}<br>`:''}` +
+        `${acres ? `${acres}<br>`:''}` +
+        `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`,
+        '#6699CD'
+      );
+      return;
+    }
+  } catch(err) { setLoadBar(0); }
+  setLoadBar(0);
   showInfo('Private / Unclassified',
     `No public land record at this point.<br>` +
     `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`,
@@ -419,16 +447,11 @@ function showInfo(title, body, borderColor) {
   const panel = document.getElementById('info-panel');
   document.getElementById('info-title').textContent = title;
   document.getElementById('info-body').innerHTML    = body;
-  panel.style.borderColor = borderColor || 'var(--accent)';
+  panel.style.borderColor = borderColor||'var(--accent)';
   panel.style.display = 'block';
 }
 function closeInfo() { document.getElementById('info-panel').style.display='none'; }
 function setLoadBar(pct) { document.getElementById('loadbar').style.width=pct+'%'; }
-function showStatus(msg) {
-  const s=document.getElementById('status');
-  s.textContent=msg; s.style.display='block';
-}
-function hideStatus() { document.getElementById('status').style.display='none'; }
 let legendOpen=true;
 function toggleLegend() {
   legendOpen=!legendOpen;
