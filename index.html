@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Public Land Map</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<!-- Leaflet JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #f0a500;
+
+    --blm:       #F5C518;
+    --usfs:      #2ecc40;
+    --nps:       #00b4d8;
+    --state:     #ff6b35;
+    --wildlife:  #a8e063;
+    --tribal:    #c084fc;
+    --military:  #ef4444;
+    --other:     #94a3b8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  #header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    z-index: 1000;
+    flex-shrink: 0;
+  }
+
+  #header h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  #header h1 span {
+    color: var(--text);
+  }
+
+  /* ── Controls row ── */
+  #controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { background: #21262d; border-color: var(--accent); }
+  .btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  #locate-btn {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-size: 0.85rem;
+    padding: 6px 14px;
+  }
+  #locate-btn:hover { background: #d49200; }
+
+  /* opacity slider */
+  #opacity-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  input[type=range] {
+    width: 70px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* ── Map ── */
+  #map {
+    flex: 1;
+    width: 100%;
+  }
+
+  /* ── Legend ── */
+  #legend {
+    position: absolute;
+    bottom: 30px;
+    right: 10px;
+    z-index: 999;
+    background: rgba(13,17,23,0.92);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    min-width: 170px;
+    backdrop-filter: blur(6px);
+  }
+
+  #legend-toggle {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+
+  #legend-body {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--text);
+  }
+
+  .legend-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  /* ── Info popup ── */
+  #info-panel {
+    position: absolute;
+    bottom: 30px;
+    left: 10px;
+    z-index: 999;
+    background: rgba(13,17,23,0.95);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 12px 14px;
+    max-width: 260px;
+    display: none;
+    backdrop-filter: blur(6px);
+  }
+
+  #info-panel h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  #info-panel p {
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  #info-close {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1;
+  }
+  #info-close:hover { color: var(--text); }
+
+  /* ── Loading overlay ── */
+  #loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2000;
+    background: rgba(13,17,23,0.9);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 28px;
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: none;
+  }
+
+  /* Leaflet popup override */
+  .leaflet-popup-content-wrapper {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 0.82rem;
+  }
+  .leaflet-popup-tip { background: var(--panel); }
+  .leaflet-popup-content { margin: 10px 14px; line-height: 1.6; }
+  .leaflet-popup-content b {
+    font-family: 'Barlow Condensed', sans-serif;
+    color: var(--accent);
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Attribution fix */
+  .leaflet-control-attribution {
+    background: rgba(13,17,23,0.7) !important;
+    color: var(--muted) !important;
+    font-size: 0.65rem !important;
+  }
+  .leaflet-control-attribution a { color: var(--muted) !important; }
+
+  @media (max-width: 480px) {
+    #header { flex-wrap: wrap; }
+    #controls { width: 100%; }
+    #legend { bottom: 20px; right: 6px; }
+    #info-panel { left: 6px; right: 6px; max-width: none; bottom: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+  <h1>PUBLIC <span>LAND MAP</span></h1>
+  <div id="controls">
+    <button class="btn active" id="btn-topo" onclick="setBase('topo')">Topo</button>
+    <button class="btn" id="btn-satellite" onclick="setBase('satellite')">Satellite</button>
+    <button class="btn" id="btn-street" onclick="setBase('street')">Street</button>
+    <button class="btn active" id="btn-layer" onclick="toggleLayer()">Ownership</button>
+    <button class="btn" id="locate-btn" onclick="locateMe()">📍 My Location</button>
+    <div id="opacity-wrap">
+      Opacity
+      <input type="range" id="opacity-slider" min="10" max="90" value="55"
+             oninput="updateOpacity(this.value)">
+    </div>
+  </div>
+</div>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Legend -->
+<div id="legend">
+  <div id="legend-toggle" onclick="toggleLegend()">
+    Legend <span id="legend-arrow">▲</span>
+  </div>
+  <div id="legend-body">
+    <div class="legend-row"><div class="legend-swatch" style="background:var(--blm)"></div>BLM</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:var(--usfs)"></div>National Forest (USFS)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:var(--nps)"></div>National Park (NPS)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:var(--state)"></div>State Land / Trust</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:var(--wildlife)"></div>Wildlife Refuge</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:var(--tribal)"></div>Tribal Land</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:var(--military)"></div>Military</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:var(--other)"></div>Other Federal</div>
+  </div>
+</div>
+
+<!-- Info panel -->
+<div id="info-panel">
+  <span id="info-close" onclick="closeInfo()">✕</span>
+  <h3 id="info-title">Land Info</h3>
+  <p id="info-body"></p>
+</div>
+
+<!-- Loading -->
+<div id="loading">Loading ownership data…</div>
+
+<script>
+// ── Base tile layers ──
+const topoLayer = L.tileLayer(
+  'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
+  { attribution: 'USGS', maxZoom: 16 }
+);
+
+const satelliteLayer = L.tileLayer(
+  'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
+  { attribution: 'USGS', maxZoom: 16 }
+);
+
+const streetLayer = L.tileLayer(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  { attribution: '© OpenStreetMap contributors', maxZoom: 19 }
+);
+
+// ── Map init ──
+const map = L.map('map', {
+  center: [39.5, -98.35],
+  zoom: 5,
+  layers: [topoLayer],
+  zoomControl: true
+});
+
+let currentBase = topoLayer;
+
+// ── PAD-US WMS overlay from USGS ──
+// Protected Areas Database of the US — official USGS service
+const padWMS = L.tileLayer.wms(
+  'https://gis.blm.gov/arcgis/services/lands/BLM_Natl_NLCS_NM_NCA_poly/MapServer/WMSServer',
+  {
+    layers: '0',
+    format: 'image/png',
+    transparent: true,
+    opacity: 0.55,
+    attribution: 'BLM NLCS'
+  }
+);
+
+// Primary: USGS PAD-US via ArcGIS WMS (all land mgmt agencies)
+const padUS = L.tileLayer(
+  'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  { opacity: 0.0 } // placeholder — real layer below
+);
+
+// Real ownership layer: BLM GeoBlade / USGS PAD-US
+// We use the ArcGIS REST tiled service from USGS National Map
+const ownershipLayer = L.tileLayer.wms(
+  'https://services.nationalmap.gov/arcgis/services/TNM_Blank_US/MapServer/WMSServer',
+  {
+    layers: '',
+    format: 'image/png',
+    transparent: true,
+    opacity: 0.55
+  }
+);
+
+// ── Best available: BLM Surface Management Agency layer ──
+// This is the authoritative federal land ownership WMS
+const smaLayer = L.tileLayer.wms(
+  'https://gis.blm.gov/arcgis/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/WMSServer',
+  {
+    layers: '1',
+    format: 'image/png',
+    transparent: true,
+    opacity: 0.55,
+    attribution: 'BLM Surface Management Agency'
+  }
+);
+
+// ── USGS PAD-US - the gold standard dataset ──
+const padusTiled = L.tileLayer(
+  'https://landscape7.arcgis.com/arcgis/rest/services/USA_Protected_Areas/MapServer/tile/{z}/{y}/{x}',
+  {
+    opacity: 0.55,
+    attribution: 'ESRI / USGS PAD-US',
+    maxZoom: 16
+  }
+);
+
+// Add to map by default
+padusTiled.addTo(map);
+let layerVisible = true;
+let currentOpacity = 0.55;
+
+// ── Base layer switcher ──
+function setBase(type) {
+  map.removeLayer(currentBase);
+  document.querySelectorAll('#btn-topo,#btn-satellite,#btn-street')
+    .forEach(b => b.classList.remove('active'));
+
+  if (type === 'topo') {
+    currentBase = topoLayer;
+    document.getElementById('btn-topo').classList.add('active');
+  } else if (type === 'satellite') {
+    currentBase = satelliteLayer;
+    document.getElementById('btn-satellite').classList.add('active');
+  } else {
+    currentBase = streetLayer;
+    document.getElementById('btn-street').classList.add('active');
+  }
+  currentBase.addTo(map);
+  currentBase.bringToBack();
+}
+
+// ── Toggle ownership layer ──
+function toggleLayer() {
+  const btn = document.getElementById('btn-layer');
+  if (layerVisible) {
+    map.removeLayer(padusTiled);
+    btn.classList.remove('active');
+    layerVisible = false;
+  } else {
+    padusTiled.addTo(map);
+    btn.classList.add('active');
+    layerVisible = true;
+  }
+}
+
+// ── Opacity ──
+function updateOpacity(val) {
+  currentOpacity = val / 100;
+  padusTiled.setOpacity(currentOpacity);
+}
+
+// ── Locate me ──
+let locationMarker = null;
+let locationCircle = null;
+
+function locateMe() {
+  const btn = document.getElementById('locate-btn');
+  btn.textContent = '⏳ Locating…';
+  btn.disabled = true;
+
+  map.locate({ setView: true, maxZoom: 13 });
+}
+
+map.on('locationfound', function(e) {
+  const btn = document.getElementById('locate-btn');
+  btn.textContent = '📍 My Location';
+  btn.disabled = false;
+
+  if (locationMarker) {
+    map.removeLayer(locationMarker);
+    map.removeLayer(locationCircle);
+  }
+
+  locationCircle = L.circle(e.latlng, {
+    radius: e.accuracy,
+    color: '#3b82f6',
+    fillColor: '#3b82f6',
+    fillOpacity: 0.1,
+    weight: 1
+  }).addTo(map);
+
+  locationMarker = L.circleMarker(e.latlng, {
+    radius: 10,
+    color: '#fff',
+    weight: 2,
+    fillColor: '#3b82f6',
+    fillOpacity: 1
+  }).addTo(map);
+
+  locationMarker.bindPopup('<b>You are here</b>Tap the map to see land ownership').openPopup();
+});
+
+map.on('locationerror', function() {
+  const btn = document.getElementById('locate-btn');
+  btn.textContent = '📍 My Location';
+  btn.disabled = false;
+  alert('Could not get your location. Please allow location access in your browser settings.');
+});
+
+// ── Click to identify ──
+// Uses the BLM/PAD-US ArcGIS identify REST endpoint
+map.on('click', async function(e) {
+  const { lat, lng } = e.latlng;
+  showInfo('Loading…', 'Fetching land ownership data…');
+
+  try {
+    // Query BLM Surface Management Agency REST service
+    const bbox = `${lng-0.01},${lat-0.01},${lng+0.01},${lat+0.01}`;
+    const url = `https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_and_Grazing_Districts/MapServer/1/query?` +
+      `geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects` +
+      `&outFields=ADMIN_AGENCY_CODE,ADMIN_UNIT_NAME,MGMT_AGENCY_CODE,GIS_ACRES&returnGeometry=false&f=json`;
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (data.features && data.features.length > 0) {
+      const f = data.features[0].attributes;
+      const agency = f.ADMIN_AGENCY_CODE || f.MGMT_AGENCY_CODE || 'Unknown';
+      const name = f.ADMIN_UNIT_NAME || '';
+      const acres = f.GIS_ACRES ? Math.round(f.GIS_ACRES).toLocaleString() + ' acres' : '';
+
+      const agencyFull = {
+        'BLM': 'Bureau of Land Management',
+        'USFS': 'US Forest Service',
+        'NPS': 'National Park Service',
+        'FWS': 'Fish & Wildlife Service',
+        'DOD': 'Department of Defense (Military)',
+        'BOR': 'Bureau of Reclamation',
+        'TRIB': 'Tribal Land',
+        'STA': 'State Land',
+        'LOC': 'Local Government',
+        'PVT': 'Private Land',
+        'NGO': 'Non-Governmental Org',
+        'OTHF': 'Other Federal'
+      }[agency] || agency;
+
+      showInfo(agencyFull, `${name ? name + '<br>' : ''}${acres ? acres + '<br>' : ''}Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`);
+    } else {
+      // fallback: try PAD-US
+      const url2 = `https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Protected_Areas/FeatureServer/0/query?` +
+        `geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects` +
+        `&outFields=Mang_Name,Unit_Nm,GIS_Acres,Mang_Type&returnGeometry=false&f=json`;
+
+      const resp2 = await fetch(url2);
+      const data2 = await resp2.json();
+
+      if (data2.features && data2.features.length > 0) {
+        const f = data2.features[0].attributes;
+        const name = f.Unit_Nm || f.Mang_Name || 'Protected Area';
+        const acres = f.GIS_Acres ? Math.round(f.GIS_Acres).toLocaleString() + ' acres' : '';
+        const type = f.Mang_Type || '';
+        showInfo(name, `${type ? type + '<br>' : ''}${acres ? acres + '<br>' : ''}Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`);
+      } else {
+        showInfo('Private / Unknown', `No federal or state ownership data found at this location.<br><br>Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`);
+      }
+    }
+  } catch(err) {
+    showInfo('Tap Info', `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}<br><small>Could not load ownership details — check connection.</small>`);
+  }
+});
+
+function showInfo(title, body) {
+  document.getElementById('info-title').textContent = title;
+  document.getElementById('info-body').innerHTML = body;
+  document.getElementById('info-panel').style.display = 'block';
+}
+
+function closeInfo() {
+  document.getElementById('info-panel').style.display = 'none';
+}
+
+// ── Legend toggle ──
+let legendOpen = true;
+function toggleLegend() {
+  legendOpen = !legendOpen;
+  document.getElementById('legend-body').style.display = legendOpen ? 'flex' : 'none';
+  document.getElementById('legend-arrow').textContent = legendOpen ? '▲' : '▼';
+}
+</script>
+</body>
+</html>
