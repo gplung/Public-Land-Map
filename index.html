@@ -48,7 +48,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #16</span>
+  <span class="build-tag">Build #17</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -109,7 +109,11 @@ const map=L.map('map',{center:[39.5,-98.35],zoom:5,layers:[topoLayer]});
 let currentBase=topoLayer, currentOpacity=0.70, layerVisible=true;
 let geoLayer=null;
 
-map.on('zoomend',()=>document.getElementById('zoom-val').textContent=map.getZoom());
+map.on('zoomend',function(){
+  const zEl=document.getElementById('zoom-val');
+  if(zEl) zEl.textContent=map.getZoom();
+  setStatus('Zoom <b>'+map.getZoom()+'</b> — tap any colored area for details');
+});
 
 // ══════════════════════════════════════════
 // BUILD #16 STRATEGY:
