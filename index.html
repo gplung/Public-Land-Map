@@ -50,9 +50,50 @@
   #info-close{position:absolute;top:7px;right:9px;cursor:pointer;color:var(--muted);font-size:0.95rem;}
   .leaflet-control-attribution{background:rgba(13,17,23,0.7)!important;color:var(--muted)!important;font-size:0.6rem!important;}
   .leaflet-control-attribution a{color:var(--muted)!important;}
+  #manage-btn{
+    background:var(--bg);color:var(--text);border:1px solid var(--border);
+    font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:600;
+    letter-spacing:0.06em;text-transform:uppercase;padding:5px 11px;
+    border-radius:4px;cursor:pointer;white-space:nowrap;
+  }
+  #manage-btn:hover{background:#21262d;border-color:var(--accent);}
+  #manage-btn.active{background:var(--accent);color:#000;border-color:var(--accent);}
+
+  #manage-panel{
+    position:absolute;top:48px;right:8px;z-index:1001;
+    background:rgba(13,17,23,0.97);border:1px solid var(--border);
+    border-radius:6px;padding:11px 13px;min-width:200px;max-height:70vh;
+    overflow-y:auto;display:none;backdrop-filter:blur(8px);
+  }
+  #manage-panel h3{
+    font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:700;
+    letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);
+    margin-bottom:8px;
+  }
+  .state-row{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:8px;padding:5px 0;font-size:0.82rem;color:var(--text);
+    border-bottom:1px solid var(--border);
+  }
+  .state-row:last-child{border-bottom:none;}
+  .state-name{font-weight:600;letter-spacing:0.04em;}
+  .state-status{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+  .state-toggle{
+    width:38px;height:20px;border-radius:10px;background:var(--border);
+    position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
+  }
+  .state-toggle.on{background:var(--accent);}
+  .state-toggle::after{
+    content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;
+    border-radius:50%;background:#fff;transition:left 0.2s;
+  }
+  .state-toggle.on::after{left:20px;}
+  .state-toggle.disabled{opacity:0.35;cursor:not-allowed;}
+
   @media(max-width:500px){
     #legend{bottom:38px;right:5px;}
     #info-panel{left:5px;right:5px;max-width:none;bottom:38px;}
+    #manage-panel{right:5px;left:5px;min-width:auto;}
   }
 </style>
 </head>
@@ -60,7 +101,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #23</span>
+  <span class="build-tag">Build #24</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -71,10 +112,15 @@
       Opacity
       <input type="range" id="opacity-slider" min="10" max="95" value="70" oninput="updateOpacity(this.value)">
     </div>
+    <button class="btn" id="manage-btn" onclick="toggleManagePanel()">States</button>
   </div>
 </div>
 <div id="map"></div>
 <div id="statusbar">Zoom <b id="zoom-val">5</b> — pan to a state to load ownership data</div>
+<div id="manage-panel">
+  <h3>Manage States</h3>
+  <div id="state-list"></div>
+</div>
 <div id="legend">
   <div id="legend-toggle" onclick="toggleLegend()">Legend <span id="legend-arrow">▲</span></div>
   <div id="legend-body">
@@ -118,6 +164,23 @@ function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#FFBEE8';}
 // upload more padus_XX.geojson files
 // ══════════════════════════════════════════
 const AVAILABLE_STATES = ['SD','WY','ID','AZ','NM','UT','CO','NV','MT'];
+
+// Full names for display in manage panel
+const STATE_NAMES = {
+  'AL':'Alabama','AK':'Alaska','AZ':'Arizona','AR':'Arkansas','CA':'California',
+  'CO':'Colorado','CT':'Connecticut','DE':'Delaware','FL':'Florida','GA':'Georgia',
+  'HI':'Hawaii','ID':'Idaho','IL':'Illinois','IN':'Indiana','IA':'Iowa',
+  'KS':'Kansas','KY':'Kentucky','LA':'Louisiana','ME':'Maine','MD':'Maryland',
+  'MA':'Massachusetts','MI':'Michigan','MN':'Minnesota','MS':'Mississippi','MO':'Missouri',
+  'MT':'Montana','NE':'Nebraska','NV':'Nevada','NH':'New Hampshire','NJ':'New Jersey',
+  'NM':'New Mexico','NY':'New York','NC':'North Carolina','ND':'North Dakota','OH':'Ohio',
+  'OK':'Oklahoma','OR':'Oregon','PA':'Pennsylvania','RI':'Rhode Island','SC':'South Carolina',
+  'SD':'South Dakota','TN':'Tennessee','TX':'Texas','UT':'Utah','VT':'Vermont',
+  'VA':'Virginia','WA':'Washington','WV':'West Virginia','WI':'Wisconsin','WY':'Wyoming'
+};
+
+// Per-state visibility toggle (user can hide states even if data is loaded)
+const stateHidden = {};
 
 // State bounding boxes [west, south, east, north]
 const STATE_BBOX = {
@@ -218,8 +281,6 @@ async function loadState(abbr){
     const geojson = await resp.json();
     stateCache[abbr] = geojson.features || [];
 
-    if(!layerVisible) return;
-
     stateLayers[abbr] = L.geoJSON(geojson, {
       style: featureStyle,
       onEachFeature: function(f, layer){
@@ -240,7 +301,13 @@ async function loadState(abbr){
           );
         });
       }
-    }).addTo(map);
+    });
+
+    if(layerVisible && !stateHidden[abbr]){
+      stateLayers[abbr].addTo(map);
+    }
+
+    rebuildStatePanel();
   } catch(err){
     console.warn(`Could not load padus_${abbr}.geojson:`, err);
   }
@@ -310,7 +377,7 @@ function toggleLayer(){
     setStatus('Ownership layer hidden');
   }else{
     Object.entries(stateLayers).forEach(([abbr,l])=>{
-      if(stateCache[abbr]) l.addTo(map);
+      if(stateCache[abbr] && !stateHidden[abbr]) l.addTo(map);
     });
     btn.classList.add('active');
     layerVisible=true;
@@ -356,6 +423,66 @@ map.on('click',function(e){
     `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
     '#888');
 });
+
+// ══════════════════════════════════════════
+// MANAGE STATES PANEL
+// ══════════════════════════════════════════
+let managePanelOpen = false;
+
+function toggleManagePanel(){
+  managePanelOpen = !managePanelOpen;
+  const panel = document.getElementById('manage-panel');
+  const btn = document.getElementById('manage-btn');
+  panel.style.display = managePanelOpen ? 'block' : 'none';
+  btn.classList.toggle('active', managePanelOpen);
+  if(managePanelOpen) rebuildStatePanel();
+}
+
+function rebuildStatePanel(){
+  const list = document.getElementById('state-list');
+  if(!list) return;
+  list.innerHTML = '';
+
+  // Sort: loaded states first, then alphabetically
+  const sorted = [...AVAILABLE_STATES].sort((a,b)=>{
+    const aLoaded = !!stateCache[a], bLoaded = !!stateCache[b];
+    if(aLoaded !== bLoaded) return aLoaded ? -1 : 1;
+    return STATE_NAMES[a].localeCompare(STATE_NAMES[b]);
+  });
+
+  sorted.forEach(abbr=>{
+    const loaded = !!stateCache[abbr];
+    const hidden = !!stateHidden[abbr];
+    const row = document.createElement('div');
+    row.className = 'state-row';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.innerHTML = `<span class="state-name">${STATE_NAMES[abbr]||abbr}</span><br>` +
+      `<span class="state-status">${loaded ? (hidden?'Hidden':'Loaded') : 'Not loaded'}</span>`;
+
+    const toggle = document.createElement('div');
+    toggle.className = 'state-toggle' + (loaded && !hidden ? ' on':'') + (!loaded ? ' disabled':'');
+    if(loaded){
+      toggle.onclick = () => toggleStateVisibility(abbr);
+    }
+
+    row.appendChild(nameDiv);
+    row.appendChild(toggle);
+    list.appendChild(row);
+  });
+}
+
+function toggleStateVisibility(abbr){
+  if(!stateCache[abbr]) return;
+  stateHidden[abbr] = !stateHidden[abbr];
+
+  if(stateHidden[abbr]){
+    if(stateLayers[abbr]) map.removeLayer(stateLayers[abbr]);
+  } else {
+    if(stateLayers[abbr] && layerVisible) stateLayers[abbr].addTo(map);
+  }
+  rebuildStatePanel();
+}
 
 // ══════════════════════════════════════════
 // UI HELPERS
