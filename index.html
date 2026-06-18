@@ -141,7 +141,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #36</span>
+  <span class="build-tag">Build #37</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -214,7 +214,7 @@ function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#FFBEE8';}
 // upload more padus_XX.geojson files
 // ══════════════════════════════════════════
 // ══════════════════════════════════════════
-// KNOWN GAP (Build #36 audit): State Land/Trust (STA) and
+// KNOWN GAP (Build #37 audit): State Land/Trust (STA) and
 // Local Government (LOC) parcels are NOT included in the
 // current padus_XX.geojson files. Original PAD-US data
 // filtered to Mang_Type in [FED,TRIB,JNT] only.
@@ -619,14 +619,20 @@ function getCampType(tags){
 // Determine managing agency from OSM operator tag
 function getCampAgency(tags){
   const op = (tags.operator||tags.ownership||'').toLowerCase();
-  if(op.includes('forest service')||op.includes('usfs')||op.includes('national forest')) return 'USFS';
-  if(op.includes('national park')||op.includes('nps')) return 'NPS';
-  if(op.includes('bureau of land')||op.includes('blm')) return 'BLM';
-  if(op.includes('fish and wildlife')||op.includes('fws')) return 'FWS';
-  if(op.includes('army corps')||op.includes('corps of engineers')) return 'DOD';
-  if(op.includes('state park')||op.includes('state forest')||op.includes('state land')) return 'State';
-  if(op.includes('county')||op.includes('city of')||op.includes('municipal')) return 'County/City';
-  return 'Unknown';
+  const ot = (tags['operator:type']||'').toLowerCase();
+  if(op.includes('forest service')||op.includes('usfs')||op.includes('national forest')) return 'US Forest Service';
+  if(op.includes('national park')||op.includes('nps')) return 'National Park Service';
+  if(op.includes('bureau of land')||op.includes('blm')) return 'Bureau of Land Management';
+  if(op.includes('fish and wildlife')||op.includes('fws')) return 'Fish & Wildlife Service';
+  if(op.includes('army corps')||op.includes('corps of engineers')) return 'Army Corps of Engineers';
+  if(op.includes('bureau of reclamation')) return 'Bureau of Reclamation';
+  if(op.includes('state park')||op.includes('state forest')||op.includes('state recreation')) return 'State Park/Forest';
+  if(op.includes('state')) return 'State Land';
+  if(op.includes('county')) return 'County';
+  if(op.includes('city of')||op.includes('municipal')||op.includes('township')) return 'City/Municipal';
+  if(ot==='government'||ot==='public'||ot==='national') return 'Government';
+  if(tags.backcountry==='yes'||tags['camp_type']==='dispersed') return 'Dispersed/Backcountry';
+  return 'Public';
 }
 
 async function fetchOverpass(query){
@@ -665,12 +671,22 @@ function buildCampQuery(){
   const bbox = getLoadedStatesBbox();
   if(!bbox) return null;
   const b = buildBboxFilter(bbox);
+  // Filter to public land campgrounds only:
+  // - operator:type = government (federal, state, county, city)
+  // - access != private (excludes private/members-only campgrounds)
+  // - backcountry/dispersed camping areas
+  // Explicitly exclude operator:type = private and commercial
   return `[out:json][timeout:60];
 (
-  node["tourism"="camp_site"]${b};
-  node["tourism"="caravan_site"]${b};
+  node["tourism"="camp_site"]["operator:type"="government"]${b};
+  node["tourism"="camp_site"]["operator:type"="public"]${b};
+  node["tourism"="camp_site"]["operator:type"="national"]${b};
+  node["tourism"="camp_site"]["access"!="private"]["access"!="customers"]["operator:type"!="private"]["operator:type"!="commercial"]["operator"~"Forest Service|National Forest|BLM|Bureau of Land|National Park|State Park|State Forest|Corps of Engineers|Fish and Wildlife|County|City of|Township",i]${b};
   node["camp_type"="dispersed"]${b};
-  way["tourism"="camp_site"]${b};
+  node["backcountry"="yes"]["tourism"="camp_site"]${b};
+  way["tourism"="camp_site"]["operator:type"="government"]${b};
+  way["tourism"="camp_site"]["operator:type"="public"]${b};
+  way["camp_type"="dispersed"]${b};
 );
 out center;`;
 }
