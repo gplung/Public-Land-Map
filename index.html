@@ -141,7 +141,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #35</span>
+  <span class="build-tag">Build #36</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -214,7 +214,7 @@ function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#FFBEE8';}
 // upload more padus_XX.geojson files
 // ══════════════════════════════════════════
 // ══════════════════════════════════════════
-// KNOWN GAP (Build #35 audit): State Land/Trust (STA) and
+// KNOWN GAP (Build #36 audit): State Land/Trust (STA) and
 // Local Government (LOC) parcels are NOT included in the
 // current padus_XX.geojson files. Original PAD-US data
 // filtered to Mang_Type in [FED,TRIB,JNT] only.
@@ -550,11 +550,22 @@ function rebuildStatePanel(){
 }
 
 async function loadAndFlyTo(abbr){
-  setStatus('Loading '+( STATE_NAMES[abbr]||abbr)+'…');
+  setStatus('Loading '+(STATE_NAMES[abbr]||abbr)+'…');
   await loadState(abbr);
   // Fly to the state
   const bb = STATE_BBOX[abbr];
   if(bb) map.fitBounds([[bb[1],bb[0]],[bb[3],bb[2]]], {padding:[30,30]});
+  // Reset POI layers so they re-fetch with expanded bbox next time
+  if(campsLoaded){
+    if(campLayer){ map.removeLayer(campLayer); campLayer=null; }
+    campsLoaded = false;
+    if(campsVisible) loadCampgrounds();
+  }
+  if(waterLoaded){
+    if(waterLayer){ map.removeLayer(waterLayer); waterLayer=null; }
+    waterLoaded = false;
+    if(waterVisible) loadWater();
+  }
   rebuildStatePanel();
 }
 
@@ -629,26 +640,50 @@ async function fetchOverpass(query){
   return resp.json();
 }
 
-// Build Overpass query for entire US campgrounds
+// Get bounding boxes for currently loaded states only
+function getLoadedStatesBbox(){
+  const loaded = Object.keys(stateCache);
+  if(loaded.length === 0) return null;
+  let xmin=180, ymin=90, xmax=-180, ymax=-90;
+  loaded.forEach(abbr => {
+    const bb = STATE_BBOX[abbr];
+    if(!bb) return;
+    xmin = Math.min(xmin, bb[0]);
+    ymin = Math.min(ymin, bb[1]);
+    xmax = Math.max(xmax, bb[2]);
+    ymax = Math.max(ymax, bb[3]);
+  });
+  return [ymin, xmin, ymax, xmax]; // Overpass format: S,W,N,E
+}
+
+// Build per-union-bbox query for loaded states only
+function buildBboxFilter(bbox){
+  return `(${bbox[0]},${bbox[1]},${bbox[2]},${bbox[3]})`;
+}
+
 function buildCampQuery(){
+  const bbox = getLoadedStatesBbox();
+  if(!bbox) return null;
+  const b = buildBboxFilter(bbox);
   return `[out:json][timeout:60];
 (
-  node["tourism"="camp_site"](24,-126,50,-66);
-  node["tourism"="caravan_site"](24,-126,50,-66);
-  node["leisure"="nature_reserve"]["backcountry"="yes"](24,-126,50,-66);
-  node["camp_type"="dispersed"](24,-126,50,-66);
-  way["tourism"="camp_site"](24,-126,50,-66);
+  node["tourism"="camp_site"]${b};
+  node["tourism"="caravan_site"]${b};
+  node["camp_type"="dispersed"]${b};
+  way["tourism"="camp_site"]${b};
 );
 out center;`;
 }
 
-// Build Overpass query for drinking water
 function buildWaterQuery(){
+  const bbox = getLoadedStatesBbox();
+  if(!bbox) return null;
+  const b = buildBboxFilter(bbox);
   return `[out:json][timeout:60];
 (
-  node["amenity"="drinking_water"](24,-126,50,-66);
-  node["amenity"="water_point"](24,-126,50,-66);
-  node["man_made"="water_tap"](24,-126,50,-66);
+  node["amenity"="drinking_water"]${b};
+  node["amenity"="water_point"]${b};
+  node["man_made"="water_tap"]${b};
 );
 out;`;
 }
@@ -663,10 +698,19 @@ function hidePoiStatus(){
 }
 
 async function loadCampgrounds(){
-  showPoiStatus('⛺ Loading campgrounds…<br><small>This may take 15-30 seconds</small>');
+  const query = buildCampQuery();
+  if(!query){
+    showPoiStatus('⚠️ No states loaded yet<br><small>Load a state first from the States panel</small>');
+    setTimeout(hidePoiStatus, 3000);
+    document.getElementById('btn-camps').classList.remove('active');
+    campsVisible = false;
+    return;
+  }
+  const loaded = Object.keys(stateCache);
+  showPoiStatus('⛺ Loading campgrounds for '+loaded.join(', ')+'…<br><small>This may take 10-20 seconds</small>');
   setLoadBar(10);
   try{
-    const data = await fetchOverpass(buildCampQuery());
+    const data = await fetchOverpass(query);
     setLoadBar(70);
     const markers = [];
     (data.elements||[]).forEach(el=>{
@@ -708,10 +752,19 @@ async function loadCampgrounds(){
 }
 
 async function loadWater(){
-  showPoiStatus('💧 Loading water sources…<br><small>This may take 15-30 seconds</small>');
+  const query = buildWaterQuery();
+  if(!query){
+    showPoiStatus('⚠️ No states loaded yet<br><small>Load a state first from the States panel</small>');
+    setTimeout(hidePoiStatus, 3000);
+    document.getElementById('btn-water').classList.remove('active');
+    waterVisible = false;
+    return;
+  }
+  const loaded = Object.keys(stateCache);
+  showPoiStatus('💧 Loading water for '+loaded.join(', ')+'…<br><small>This may take 10-20 seconds</small>');
   setLoadBar(10);
   try{
-    const data = await fetchOverpass(buildWaterQuery());
+    const data = await fetchOverpass(query);
     setLoadBar(70);
     const markers = [];
     (data.elements||[]).forEach(el=>{
