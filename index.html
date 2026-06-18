@@ -141,7 +141,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #38</span>
+  <span class="build-tag">Build #39</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -214,7 +214,7 @@ function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#FFBEE8';}
 // upload more padus_XX.geojson files
 // ══════════════════════════════════════════
 // ══════════════════════════════════════════
-// KNOWN GAP (Build #38 audit): State Land/Trust (STA) and
+// KNOWN GAP (Build #39 audit): State Land/Trust (STA) and
 // Local Government (LOC) parcels are NOT included in the
 // current padus_XX.geojson files. Original PAD-US data
 // filtered to Mang_Type in [FED,TRIB,JNT] only.
@@ -773,13 +773,17 @@ async function loadCampgrounds(){
       const marker = L.marker([lat,lon], {icon}).on('click', function(e){
         L.DomEvent.stopPropagation(e);
         lastFeatureClickTime = Date.now();
+        const gmapsCampUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
         showInfo(name,
           `<span style="color:#aaa">${type==='dispersed'?'Dispersed Camping':'Developed Campground'}</span><br>`+
-          `${agency!=='Unknown'?`Managed by: ${agency}<br>`:''}`+
+          `${agency!=='Unknown'&&agency!=='Public'?`Managed by: ${agency}<br>`:''}`+
           `${tags.fee?`Fee: ${tags.fee}<br>`:''}`+
           `${tags.capacity?`Capacity: ${tags.capacity}<br>`:''}`+
           `${tags.toilets?`Toilets: ${tags.toilets}<br>`:''}`+
-          `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lon.toFixed(5)}</span>`,
+          `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lon.toFixed(5)}</span><br>`+
+          `<a href="${gmapsCampUrl}" target="_blank" style="color:#4A90D9;font-size:0.78rem;font-weight:600;text-decoration:none;">
+            📍 Open in Google Maps
+          </a>`,
           '#1a9e1a'
         );
       });
@@ -822,12 +826,16 @@ async function loadWater(){
       const marker = L.marker([el.lat,el.lon], {icon:waterIcon}).on('click', function(e){
         L.DomEvent.stopPropagation(e);
         lastFeatureClickTime = Date.now();
+        const gmapsWaterUrl = `https://www.google.com/maps/dir/?api=1&destination=${el.lat},${el.lon}&travelmode=driving`;
         showInfo(name,
           `<span style="color:#aaa">Drinking Water</span><br>`+
           `${tags.operator?`Operator: ${tags.operator}<br>`:''}`+
           `${tags.seasonal?`Seasonal: ${tags.seasonal}<br>`:''}`+
           `${tags.bottle?`Bottle fill: ${tags.bottle}<br>`:''}`+
-          `<span style="color:var(--muted);font-size:0.72rem">${el.lat.toFixed(5)}, ${el.lon.toFixed(5)}</span>`,
+          `<span style="color:var(--muted);font-size:0.72rem">${el.lat.toFixed(5)}, ${el.lon.toFixed(5)}</span><br>`+
+          `<a href="${gmapsWaterUrl}" target="_blank" style="color:#4A90D9;font-size:0.78rem;font-weight:600;text-decoration:none;">
+            📍 Open in Google Maps
+          </a>`,
           '#00aaff'
         );
       });
