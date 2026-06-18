@@ -101,7 +101,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #28</span>
+  <span class="build-tag">Build #29</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -164,7 +164,7 @@ function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#FFBEE8';}
 // upload more padus_XX.geojson files
 // ══════════════════════════════════════════
 // ══════════════════════════════════════════
-// KNOWN GAP (Build #28 audit): State Land/Trust (STA) and
+// KNOWN GAP (Build #29 audit): State Land/Trust (STA) and
 // Local Government (LOC) parcels are NOT included in the
 // current padus_XX.geojson files. Original PAD-US data
 // filtered to Mang_Type in [FED,TRIB,JNT] only.
@@ -463,10 +463,11 @@ function rebuildStatePanel(){
   list.innerHTML = '';
 
   // Sort: loaded states first, then alphabetically
+  // Sort: loaded first, then available alphabetically
   const sorted = [...AVAILABLE_STATES].sort((a,b)=>{
     const aLoaded = !!stateCache[a], bLoaded = !!stateCache[b];
     if(aLoaded !== bLoaded) return aLoaded ? -1 : 1;
-    return STATE_NAMES[a].localeCompare(STATE_NAMES[b]);
+    return (STATE_NAMES[a]||a).localeCompare(STATE_NAMES[b]||b);
   });
 
   sorted.forEach(abbr=>{
@@ -476,11 +477,13 @@ function rebuildStatePanel(){
     row.className = 'state-row';
 
     const nameDiv = document.createElement('div');
+    const statusText = loaded ? (hidden ? 'Hidden' : 'Loaded') : 'Available';
     nameDiv.innerHTML = `<span class="state-name">${STATE_NAMES[abbr]||abbr}</span><br>` +
-      `<span class="state-status">${loaded ? (hidden?'Hidden':'Loaded') : 'Not loaded'}</span>`;
+      `<span class="state-status" style="color:${loaded && !hidden ? '#70A800' : loaded && hidden ? '#f0a500' : 'var(--muted)'}">${statusText}</span>`;
 
     const toggle = document.createElement('div');
     toggle.className = 'state-toggle' + (loaded && !hidden ? ' on':'') + (!loaded ? ' disabled':'');
+    toggle.title = loaded ? 'Toggle visibility' : 'Zoom to this state to load it';
     if(loaded){
       toggle.onclick = () => toggleStateVisibility(abbr);
     }
