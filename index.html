@@ -101,7 +101,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #27</span>
+  <span class="build-tag">Build #28</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -116,7 +116,7 @@
   </div>
 </div>
 <div id="map"></div>
-<div id="statusbar">Zoom <b id="zoom-val">5</b> — pan to a state to load ownership data</div>
+<div id="statusbar">Zoom <b id="zoom-val">4</b> — zoom in or tap a state to load ownership data</div>
 <div id="manage-panel">
   <h3>Manage States</h3>
   <div id="state-list"></div>
@@ -164,7 +164,7 @@ function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#FFBEE8';}
 // upload more padus_XX.geojson files
 // ══════════════════════════════════════════
 // ══════════════════════════════════════════
-// KNOWN GAP (Build #27 audit): State Land/Trust (STA) and
+// KNOWN GAP (Build #28 audit): State Land/Trust (STA) and
 // Local Government (LOC) parcels are NOT included in the
 // current padus_XX.geojson files. Original PAD-US data
 // filtered to Mang_Type in [FED,TRIB,JNT] only.
@@ -227,7 +227,7 @@ const topoLayer     =L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/se
 const satelliteLayer=L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}',{attribution:'USGS Imagery',maxZoom:16,zIndex:1});
 const streetLayer   =L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19,zIndex:1});
 
-const map=L.map('map',{center:[39.5,-98.35],zoom:5,layers:[topoLayer]});
+const map=L.map('map',{center:[39.5,-98.35],zoom:4,layers:[topoLayer]});
 
 // ── Bold state boundary overlay ──
 // Loads US state outlines from GitHub and draws bold white+dark lines
@@ -322,9 +322,17 @@ async function loadState(abbr){
 
 async function loadVisibleStates(){
   if(!layerVisible) return;
+  const zoom = map.getZoom();
+
+  // Don't auto-load until zoomed in enough
+  if(zoom < 6){
+    setStatus('Zoom <b id="zoom-val">'+zoom+'</b> — zoom in to load ownership data');
+    return;
+  }
+
   const visible = getVisibleStates();
   if(visible.length === 0){
-    setStatus('Zoom <b id="zoom-val">'+map.getZoom()+'</b> — pan to a covered state to load data');
+    setStatus('Zoom <b id="zoom-val">'+zoom+'</b> — pan to a covered state to load data');
     return;
   }
 
