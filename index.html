@@ -92,6 +92,44 @@
   .state-row{cursor:pointer;}
   .state-row:hover .state-name{color:var(--accent);}
 
+  /* Campground / Water layer buttons */
+  #layer-controls{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .layer-btn{
+    font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:600;
+    letter-spacing:0.05em;text-transform:uppercase;padding:4px 9px;
+    border-radius:4px;border:1px solid var(--border);background:var(--bg);
+    color:var(--muted);cursor:pointer;white-space:nowrap;transition:all 0.15s;
+  }
+  .layer-btn:hover{border-color:var(--accent);color:var(--text);}
+  .layer-btn.active{border-color:currentColor;color:#fff;}
+  .layer-btn.camp{--c:#1a9e1a;}
+  .layer-btn.water{--c:#00aaff;}
+  .layer-btn.active{background:var(--c,var(--accent));border-color:var(--c,var(--accent));}
+
+  /* Marker icons */
+  .camp-icon{
+    background:#1a9e1a;border:2px solid #fff;border-radius:50%;
+    width:14px;height:14px;box-shadow:0 1px 4px rgba(0,0,0,0.5);
+  }
+  .camp-dispersed-icon{
+    background:#8B6914;border:2px solid #fff;border-radius:3px;
+    width:14px;height:14px;box-shadow:0 1px 4px rgba(0,0,0,0.5);
+  }
+  .water-icon{
+    background:#00aaff;border:2px solid #fff;border-radius:50%;
+    width:12px;height:12px;box-shadow:0 1px 4px rgba(0,0,0,0.5);
+  }
+
+  #poi-status{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:1500;background:rgba(13,17,23,0.92);border:1px solid var(--accent);
+    border-radius:8px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;
+    font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--accent);display:none;text-align:center;backdrop-filter:blur(6px);
+  }
+
   @media(max-width:500px){
     #legend{bottom:38px;right:5px;}
     #info-panel{left:5px;right:5px;max-width:none;bottom:38px;}
@@ -103,7 +141,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #34</span>
+  <span class="build-tag">Build #35</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -115,9 +153,12 @@
       <input type="range" id="opacity-slider" min="10" max="95" value="70" oninput="updateOpacity(this.value)">
     </div>
     <button class="btn" id="manage-btn" onclick="toggleManagePanel()">States</button>
+    <button class="layer-btn camp" id="btn-camps" onclick="toggleCampgrounds()">⛺ Camps</button>
+    <button class="layer-btn water" id="btn-water" onclick="toggleWater()">💧 Water</button>
   </div>
 </div>
 <div id="map"></div>
+<div id="poi-status"></div>
 <div id="statusbar">Zoom <b id="zoom-val">4</b> — zoom in or tap a state to load ownership data</div>
 <div id="manage-panel">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -138,6 +179,10 @@
     <div class="legend-row"><div class="legend-swatch" style="background:#FF0000"></div>Military (DOD)</div>
     <div class="legend-row"><div class="legend-swatch" style="background:#004DA8"></div>Bureau of Reclamation</div>
     <div class="legend-row"><div class="legend-swatch" style="background:#FFBEE8"></div>Other Federal</div>
+    <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+      <div style="width:14px;height:14px;background:#1a9e1a;border:2px solid #fff;border-radius:50%;flex-shrink:0"></div>Developed Campground</div>
+    <div class="legend-row"><div style="width:14px;height:14px;background:#8B6914;border:2px solid #fff;border-radius:3px;flex-shrink:0"></div>Dispersed Camping</div>
+    <div class="legend-row"><div style="width:12px;height:12px;background:#00aaff;border:2px solid #fff;border-radius:50%;flex-shrink:0;margin:1px"></div>Drinking Water</div>
   </div>
 </div>
 <div id="info-panel">
@@ -169,7 +214,7 @@ function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#FFBEE8';}
 // upload more padus_XX.geojson files
 // ══════════════════════════════════════════
 // ══════════════════════════════════════════
-// KNOWN GAP (Build #34 audit): State Land/Trust (STA) and
+// KNOWN GAP (Build #35 audit): State Land/Trust (STA) and
 // Local Government (LOC) parcels are NOT included in the
 // current padus_XX.geojson files. Original PAD-US data
 // filtered to Mang_Type in [FED,TRIB,JNT] only.
@@ -527,6 +572,214 @@ function toggleStateVisibility(abbr){
 
 // ══════════════════════════════════════════
 // UI HELPERS
+// ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// CAMPGROUND & WATER LAYER
+// Fetches from Overpass (OpenStreetMap) in the
+// browser - covers federal, state, county camps
+// and developed drinking water sources
+// ══════════════════════════════════════════
+
+let campLayer = null;
+let waterLayer = null;
+let campsVisible = false;
+let waterVisible = false;
+let campsLoaded = false;
+let waterLoaded = false;
+
+// Custom marker icons
+function makeIcon(className){
+  return L.divIcon({className:'', html:`<div class="${className}"></div>`, iconSize:[14,14], iconAnchor:[7,7]});
+}
+
+const campIcon      = makeIcon('camp-icon');
+const dispersedIcon = makeIcon('camp-dispersed-icon');
+const waterIcon     = makeIcon('water-icon');
+
+// Determine campground type from OSM tags
+function getCampType(tags){
+  const op = (tags.operator||'').toLowerCase();
+  const nm = (tags.name||'').toLowerCase();
+  if(tags.backcountry==='yes' || tags.dispersed==='yes') return 'dispersed';
+  if(tags['camp_type']==='dispersed') return 'dispersed';
+  return 'developed';
+}
+
+// Determine managing agency from OSM operator tag
+function getCampAgency(tags){
+  const op = (tags.operator||tags.ownership||'').toLowerCase();
+  if(op.includes('forest service')||op.includes('usfs')||op.includes('national forest')) return 'USFS';
+  if(op.includes('national park')||op.includes('nps')) return 'NPS';
+  if(op.includes('bureau of land')||op.includes('blm')) return 'BLM';
+  if(op.includes('fish and wildlife')||op.includes('fws')) return 'FWS';
+  if(op.includes('army corps')||op.includes('corps of engineers')) return 'DOD';
+  if(op.includes('state park')||op.includes('state forest')||op.includes('state land')) return 'State';
+  if(op.includes('county')||op.includes('city of')||op.includes('municipal')) return 'County/City';
+  return 'Unknown';
+}
+
+async function fetchOverpass(query){
+  const url = 'https://overpass-api.de/api/interpreter';
+  const resp = await fetch(url, {
+    method: 'POST',
+    body: 'data=' + encodeURIComponent(query),
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+  });
+  if(!resp.ok) throw new Error('Overpass error: '+resp.status);
+  return resp.json();
+}
+
+// Build Overpass query for entire US campgrounds
+function buildCampQuery(){
+  return `[out:json][timeout:60];
+(
+  node["tourism"="camp_site"](24,-126,50,-66);
+  node["tourism"="caravan_site"](24,-126,50,-66);
+  node["leisure"="nature_reserve"]["backcountry"="yes"](24,-126,50,-66);
+  node["camp_type"="dispersed"](24,-126,50,-66);
+  way["tourism"="camp_site"](24,-126,50,-66);
+);
+out center;`;
+}
+
+// Build Overpass query for drinking water
+function buildWaterQuery(){
+  return `[out:json][timeout:60];
+(
+  node["amenity"="drinking_water"](24,-126,50,-66);
+  node["amenity"="water_point"](24,-126,50,-66);
+  node["man_made"="water_tap"](24,-126,50,-66);
+);
+out;`;
+}
+
+function showPoiStatus(msg){
+  const el = document.getElementById('poi-status');
+  el.innerHTML = msg;
+  el.style.display = 'block';
+}
+function hidePoiStatus(){
+  document.getElementById('poi-status').style.display = 'none';
+}
+
+async function loadCampgrounds(){
+  showPoiStatus('⛺ Loading campgrounds…<br><small>This may take 15-30 seconds</small>');
+  setLoadBar(10);
+  try{
+    const data = await fetchOverpass(buildCampQuery());
+    setLoadBar(70);
+    const markers = [];
+    (data.elements||[]).forEach(el=>{
+      const lat = el.lat || (el.center && el.center.lat);
+      const lon = el.lon || (el.center && el.center.lon);
+      if(!lat||!lon) return;
+      const tags = el.tags||{};
+      const type = getCampType(tags);
+      const agency = getCampAgency(tags);
+      const name = tags.name || (type==='dispersed'?'Dispersed Camping':'Campground');
+      const icon = type==='dispersed' ? dispersedIcon : campIcon;
+      const marker = L.marker([lat,lon], {icon}).on('click', function(e){
+        L.DomEvent.stopPropagation(e);
+        lastFeatureClickTime = Date.now();
+        showInfo(name,
+          `<span style="color:#aaa">${type==='dispersed'?'Dispersed Camping':'Developed Campground'}</span><br>`+
+          `${agency!=='Unknown'?`Managed by: ${agency}<br>`:''}`+
+          `${tags.fee?`Fee: ${tags.fee}<br>`:''}`+
+          `${tags.capacity?`Capacity: ${tags.capacity}<br>`:''}`+
+          `${tags.toilets?`Toilets: ${tags.toilets}<br>`:''}`+
+          `<span style="color:var(--muted);font-size:0.72rem">${lat.toFixed(5)}, ${lon.toFixed(5)}</span>`,
+          '#1a9e1a'
+        );
+      });
+      markers.push(marker);
+    });
+    campLayer = L.layerGroup(markers).addTo(map);
+    campsLoaded = true;
+    setLoadBar(100); setTimeout(()=>setLoadBar(0),400);
+    hidePoiStatus();
+    setStatus('Zoom <b>'+map.getZoom()+'</b> · ⛺ '+markers.length+' campgrounds loaded');
+  } catch(err){
+    setLoadBar(0);
+    hidePoiStatus();
+    showPoiStatus('⚠️ Could not load campgrounds<br><small>Check your connection</small>');
+    setTimeout(hidePoiStatus, 4000);
+    console.warn('Campground load failed:', err);
+  }
+}
+
+async function loadWater(){
+  showPoiStatus('💧 Loading water sources…<br><small>This may take 15-30 seconds</small>');
+  setLoadBar(10);
+  try{
+    const data = await fetchOverpass(buildWaterQuery());
+    setLoadBar(70);
+    const markers = [];
+    (data.elements||[]).forEach(el=>{
+      if(!el.lat||!el.lon) return;
+      const tags = el.tags||{};
+      const name = tags.name||'Drinking Water';
+      const marker = L.marker([el.lat,el.lon], {icon:waterIcon}).on('click', function(e){
+        L.DomEvent.stopPropagation(e);
+        lastFeatureClickTime = Date.now();
+        showInfo(name,
+          `<span style="color:#aaa">Drinking Water</span><br>`+
+          `${tags.operator?`Operator: ${tags.operator}<br>`:''}`+
+          `${tags.seasonal?`Seasonal: ${tags.seasonal}<br>`:''}`+
+          `${tags.bottle?`Bottle fill: ${tags.bottle}<br>`:''}`+
+          `<span style="color:var(--muted);font-size:0.72rem">${el.lat.toFixed(5)}, ${el.lon.toFixed(5)}</span>`,
+          '#00aaff'
+        );
+      });
+      markers.push(marker);
+    });
+    waterLayer = L.layerGroup(markers).addTo(map);
+    waterLoaded = true;
+    setLoadBar(100); setTimeout(()=>setLoadBar(0),400);
+    hidePoiStatus();
+    setStatus('Zoom <b>'+map.getZoom()+'</b> · 💧 '+markers.length+' water sources loaded');
+  } catch(err){
+    setLoadBar(0);
+    hidePoiStatus();
+    showPoiStatus('⚠️ Could not load water sources<br><small>Check your connection</small>');
+    setTimeout(hidePoiStatus, 4000);
+    console.warn('Water load failed:', err);
+  }
+}
+
+function toggleCampgrounds(){
+  const btn = document.getElementById('btn-camps');
+  if(campsVisible){
+    if(campLayer) map.removeLayer(campLayer);
+    btn.classList.remove('active');
+    campsVisible = false;
+  } else {
+    if(!campsLoaded){
+      loadCampgrounds();
+    } else if(campLayer){
+      campLayer.addTo(map);
+    }
+    btn.classList.add('active');
+    campsVisible = true;
+  }
+}
+
+function toggleWater(){
+  const btn = document.getElementById('btn-water');
+  if(waterVisible){
+    if(waterLayer) map.removeLayer(waterLayer);
+    btn.classList.remove('active');
+    waterVisible = false;
+  } else {
+    if(!waterLoaded){
+      loadWater();
+    } else if(waterLayer){
+      waterLayer.addTo(map);
+    }
+    btn.classList.add('active');
+    waterVisible = true;
+  }
+}
+
 // ══════════════════════════════════════════
 function showInfo(title,body,borderColor){
   const p=document.getElementById('info-panel');
