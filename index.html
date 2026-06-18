@@ -101,7 +101,7 @@
 <div id="loadbar"></div>
 <div id="header">
   <h1>PUBLIC <span>LAND MAP</span></h1>
-  <span class="build-tag">Build #24</span>
+  <span class="build-tag">Build #26</span>
   <div id="controls">
     <button class="btn active" id="btn-topo"      onclick="setBase('topo')">Topo</button>
     <button class="btn"        id="btn-satellite"  onclick="setBase('satellite')">Satellite</button>
@@ -163,7 +163,16 @@ function agencyColor(c){return COLORS[(c||'').toUpperCase()]||'#FFBEE8';}
 // Add new state abbreviations here as you
 // upload more padus_XX.geojson files
 // ══════════════════════════════════════════
-const AVAILABLE_STATES = ['SD','WY','ID','AZ','NM','UT','CO','NV','MT'];
+// ══════════════════════════════════════════
+// KNOWN GAP (Build #26 audit): State Land/Trust (STA) and
+// Local Government (LOC) parcels are NOT included in the
+// current padus_XX.geojson files. Original PAD-US data
+// filtered to Mang_Type in [FED,TRIB,JNT] only.
+// To add state trust lands, original .gdb files need to be
+// reprocessed including Mang_Type == 'STAT' or 'LOC' records
+// where Mang_Name indicates state land board/trust.
+// ══════════════════════════════════════════
+const AVAILABLE_STATES = ['SD','WY','ID','AZ','NM','UT','CO','NV','MT','ND','OR','WA','CA','TX','OK','KS','NE','MN','IA','MO','AR','LA','WI','MI'];
 
 // Full names for display in manage panel
 const STATE_NAMES = {
@@ -222,32 +231,29 @@ const map=L.map('map',{center:[39.5,-98.35],zoom:5,layers:[topoLayer]});
 
 // ── Bold state boundary overlay ──
 // Loads US state outlines from GitHub and draws bold white+dark lines
-fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
-  .then(r => r.json())
-  .then(data => {
+// Retry up to 2 times since this is an external dependency
+async function loadStateBorders(attempt=1){
+  try{
+    const resp = await fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json');
+    if(!resp.ok) throw new Error(resp.status);
+    const data = await resp.json();
     // Draw thick white outline first (background)
     L.geoJSON(data, {
-      style: {
-        color: '#ffffff',
-        weight: 4,
-        fill: false,
-        opacity: 1.0
-      },
+      style: { color:'#ffffff', weight:4, fill:false, opacity:1.0 },
       zIndex: 20
     }).addTo(map);
     // Draw dark line on top
     L.geoJSON(data, {
-      style: {
-        color: '#1a1a2e',
-        weight: 2,
-        fill: false,
-        opacity: 1.0,
-        dashArray: null
-      },
+      style: { color:'#1a1a2e', weight:2, fill:false, opacity:1.0 },
       zIndex: 21
     }).addTo(map);
-  })
-  .catch(err => console.warn('Could not load state borders:', err));
+  } catch(err){
+    console.warn('State border load failed (attempt '+attempt+'):', err);
+    if(attempt < 2) setTimeout(()=>loadStateBorders(attempt+1), 2000);
+    // Silent failure after retries - base map still has faint state lines from USGS topo
+  }
+}
+loadStateBorders();
 let currentBase=topoLayer, currentOpacity=0.70, layerVisible=true;
 
 // ══════════════════════════════════════════
@@ -286,6 +292,7 @@ async function loadState(abbr){
       onEachFeature: function(f, layer){
         layer.on('click', function(e){
           L.DomEvent.stopPropagation(e);
+          lastFeatureClickTime = Date.now();
           const p = f.properties;
           const agency = (p.agency||'OTHF').toUpperCase();
           const label = LABELS[agency]||agency;
@@ -417,7 +424,11 @@ map.on('locationerror',function(){
 // ══════════════════════════════════════════
 // MAP CLICK — identify
 // ══════════════════════════════════════════
+let lastFeatureClickTime = 0;
 map.on('click',function(e){
+  // Defense-in-depth: if a feature was just clicked (stopPropagation should
+  // have prevented this, but some browsers/Leaflet versions are inconsistent)
+  if(Date.now() - lastFeatureClickTime < 100) return;
   showInfo('Private / Unclassified',
     `No public land record at this point.<br>`+
     `<span style="color:var(--muted);font-size:0.72rem">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span>`,
